@@ -346,6 +346,17 @@ CpuPdp11.prototype.runStep = function () {
                 }
                 return;
             case 0076000:  // XOR
+                var r = (instruction & 0000700) >> 6;
+                this.registerSet[r] = (this.registerSet[r] - 1) & 0xffff;
+                if (this.registerSet[r] != 0) {
+                    var offset = instruction & 0000077;
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] -
+                                    (offset * 2)) & 0xffff;
+                }
+                return;
+            case 0077000:  // SOB
+                return;
             default:
                 break;
         }
@@ -726,9 +737,8 @@ CpuPdp11.prototype._storeInternal = function (address, value) {
             this.flagV = (value >> 1) & 1;
             this.flagC = value & 1;
             return;
-        default:
-            throw new RangeError("Unknown register.");
     }
+    throw new RangeError("Unknown register.");
 };
 
 /**
@@ -759,6 +769,10 @@ CpuPdp11.prototype._indexByMode = function (modeAndR) {
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             throw new Error("Invalid indexing.");
+        case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
+            result = this._loadWord(this.registerSet[r]);
+            this.registerSet[r] += 2;
+            break;
         case CpuPdp11._ADDRESSING_INDEX:
             result = (this._fetchWord() + this.registerSet[r]) & 0xffff;
             break;
@@ -835,6 +849,11 @@ CpuPdp11.prototype._loadWordByMode = function (modeAndR) {
             result = this._loadWord(
                     (this._fetchWord() + this.registerSet[r]) & 0xffff);
             break;
+        case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
+            result = this._loadWord(
+                    (this._fetchWord() + this.registerSet[r]) & 0xffff);
+            result = this._loadWord(result);
+            break;
         default:
             throw new RangeError("Invalid indexing mode: wl," + mode);
     }
@@ -897,6 +916,11 @@ CpuPdp11.prototype._storeWordByMode = function (modeAndR, value) {
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
             this._storeWord(this.registerSet[r], value);
             this.registerSet[r] += 2;
+            break;
+        case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
+            var address = this._loadWord(this.registerSet[r], value);
+            this.registerSet[r] += 2;
+            this._storeWord(address, value);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             this.registerSet[r] -= 2;
