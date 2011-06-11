@@ -73,7 +73,9 @@ CpuPdp11._ADDRESSING_REGISTER_DEFERRED = 1;
 CpuPdp11._ADDRESSING_AUTOINCREMENT = 2;
 CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED = 3;
 CpuPdp11._ADDRESSING_AUTODECREMENT = 4;
+CpuPdp11._ADDRESSING_AUTODECREMENT_DEFERRED = 5;
 CpuPdp11._ADDRESSING_INDEX = 6;
+CpuPdp11._ADDRESSING_INDEX_DEFERRED = 7;
 
 CpuPdp11._ADDRESSING_PUSH = (CpuPdp11._ADDRESSING_AUTODECREMENT << 3) |
         CpuPdp11.REGISTER_SP;
@@ -185,18 +187,51 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagC = (src < dst) ? 1 : 0;
                 return;
             case 0030000:  // BIT
-                break;
+                var src = this._loadWordByMode((instruction & 0007700) >> 6);
+                this._operationWordByMode(instruction & 0000077,
+                        function (dst) {
+                            var result = src & dst;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = 0;
+                            return result;
+                        });
+                return;
             case 0040000:  // BIC
                 var src = this._loadWordByMode((instruction & 0007700) >> 6);
-                var dst = this._loadWordByMode(instruction & 0000077);
-                var result = dst & ~src;
-                this.flagN = (result >> 15) & 1;
-                this.flagZ = (result == 0) ? 1 : 0;
-                this.flagV = 0;
+                this._operationWordByMode(instruction & 0000077,
+                        function (dst) {
+                            var result = ~src & dst;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = 0;
+                            return result;
+                        });
                 return;
             case 0050000:  // BIS
+                var src = this._loadWordByMode((instruction & 0007700) >> 6);
+                this._operationWordByMode(instruction & 0000077,
+                        function (dst) {
+                            var result = src ^ dst;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = 0;
+                            return result;
+                        });
+                return;
             case 0060000:  // ADD
-                break;
+                var src = this._loadWordByMode((instruction & 0007700) >> 6);
+                this._operationWordByMode(instruction & 0000077,
+                        function (dst) {
+                            var result = src + dst;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = ((~(src ^ dst) & (src ^ result)) >> 15) & 1;
+                            this.flagC = (result > 0xffff) ? 1 : 0;
+                            result &= 0xffff;
+                            return result;
+                        });
+                return;
             case 0110000:  // MOVB
                 var src = this._loadCharByMode((instruction & 0007700) >> 6);
                 this.flagN = (src >> 7) & 1;
@@ -205,10 +240,30 @@ CpuPdp11.prototype.runStep = function () {
                 this._storeCharByMode(instruction & 0000077, src);
                 return;
             case 0120000:  // CMPB
+                var src = this._loadCharByMode((instruction & 0007700) >> 6);
+                var dst = this._loadCharByMode(instruction & 0000077);
+                var result = src - dst;
+                this.flagN = (result >> 7) & 1;
+                this.flagZ = (result == 0) ? 1 : 0;
+                this.flagV = (((src ^ dst) & (~dst ^ result)) >> 7) & 1;
+                this.flagC = (src < dst) ? 1 : 0;
+                return;
             case 0130000:  // BITB
             case 0140000:  // BICB
             case 0150000:  // BISB
+                break;
             case 0160000:  // SUB
+                var src = this._loadWordByMode((instruction & 0007700) >> 6);
+                this._operationWordByMode(instruction & 0000077,
+                        function (dst) {
+                            var result = src - dst;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = (((src ^ dst) & (~dst ^ result)) >> 15) & 1;
+                            this.flagC = (src < dst) ? 1 : 0;
+                            return result & 0xffff;
+                        });
+                return;
             default:
                 break;
         }
@@ -222,7 +277,65 @@ CpuPdp11.prototype.runStep = function () {
                 this.registerSet[CpuPdp11.REGISTER_PC] = pc;
                 return;
             case 0070000:  // MUL
+                break;
             case 0071000:  // DIV
+                var r = (instruction & 0000600) >> 6;
+                var dst = (this.registerSet[r] << 16) | this.registerSet[r + 1];
+                var src = this._loadWordByMode(instruction & 0000077);
+                if (src == 0) {
+                    this.flagN = 0;
+                    this.flagZ = 1;
+                    this.flagV = 1;
+                    this.flagC = 1;
+                } else if ((dst == 0x80000000) && (src == 0177777)) {
+                    this.flagN = 0;
+                    this.flagZ = 0;
+                    this.flagV = 1;
+                    this.flagC = 0;
+                } else {
+                    var result = ~~(dst / src);
+                    this.flagN = (result >> 15) & 1;
+                    if ((result > 0777777) || (result < -0100000)) {
+                        this.flagZ = 0;
+                        this.flagV = 1;
+                        this.flagC = 0;
+                    } else {
+                        this.registerSet[r + 0] = result;
+                        this.registerSet[r + 1] = dst % src;
+                        this.flagZ = (result == 0) ? 1 : 0;
+                        this.flagV = 0;
+                        this.flagC = 0;
+                    }
+                }
+                return;
+            case 0072000:  // ASH
+                var src = this._loadWordByMode(instruction & 0000077);
+                var offset = src & 0000037;
+                var sign = (src & 0000040) >> 5;
+                var r = (instruction & 0000700) >> 6;
+                if (sign == 0) {
+                    // Shift to left
+                    var result = this.registerSet[r] << offset;
+                    this.flagN = (result >> 15) & 1;
+                    this.flagZ = (result == 0) ? 1 : 0;
+                    this.flagV = ((result ^ this.registerSet[r]) >> 15) & 1;
+                    this.flagC = (result >> 16) & 1;
+                    this.registerSet[r] = result & 0xffff;
+                } else {
+                    // Shift to right
+                    offset = 32 - offset;
+                    if (offset > 16)
+                        offset = 16;
+                    var result = this.registerSet[r] >> offset;
+                    if ((this.registerSet[r] & 0x8000) != 0)
+                        result |= (0xffff << (16 - offset)) & 0xffff;
+                    this.flagN = (result >> 15) & 1;
+                    this.flagZ = (result == 0) ? 1 : 0;
+                    this.flagV = ((result ^ this.registerSet[r]) >> 15) & 1;
+                    this.flagC = (this.registerSet[r] >> (offset - 1)) & 1;
+                    this.registerSet[r] = result & 0xffff;
+                }
+                return;
             case 0076000:  // XOR
             default:
                 break;
@@ -335,8 +448,22 @@ CpuPdp11.prototype.runStep = function () {
                 this._storeWordByMode(instruction & 0000077, 0);
                 return;
             case 0005200:  // INC
+                this._operationWordByMode(instruction & 0000077,
+                        function (dst) {
+                            var result = (dst + 1) & 0xffff;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = this.flagZ;
+                            return result;
+                        });
+                return;
             case 0005700:  // TST
-                break;
+                var test = this._loadWordByMode(instruction & 0000077);
+                this.flagN = (test >> 15) & 1;
+                this.flagZ = (test == 0) ? 1 : 0;
+                this.flagV = 0;
+                this.flagC = 0;
+                return;
             case 0006300:  // ASL
                 this._operationWordByMode(instruction & 0000077,
                         function (dst) {
@@ -538,10 +665,10 @@ CpuPdp11.prototype._loadCharByMode = function (modeAndR) {
             break;
         case CpuPdp11._ADDRESSING_INDEX:
             result = this._loadChar(
-                    (this.registerSet[r] + this._fetchWord()) & 0xffff);
+                    (this._fetchWord() + this.registerSet[r]) & 0xffff);
             break;
         default:
-            throw new RangeError("Invalid indexing mode: " + mode);
+            throw new RangeError("Invalid indexing mode: bl," + mode);
     }
     return result;
 };
@@ -575,7 +702,7 @@ CpuPdp11.prototype._loadWordByMode = function (modeAndR) {
                     (this._fetchWord() + this.registerSet[r]) & 0xffff);
             break;
         default:
-            throw new RangeError("Invalid indexing mode: " + mode);
+            throw new RangeError("Invalid indexing mode: wl," + mode);
     }
     return result;
 };
@@ -590,16 +717,17 @@ CpuPdp11.prototype._storeCharByMode = function (modeAndR, value) {
     var r = modeAndR & 7;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
-            throw new RangeError("Unimplemented indexing mode: " + mode);
+            this.registerSet[r] = (this.registerSet[r] & 0xff00) | value;
+            break;
         case CpuPdp11._ADDRESSING_REGISTER_DEFERRED:
             this._storeChar(this.registerSet[r], value);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
             this._storeChar(this.registerSet[r], value);
-            this.registerSet[r] += 2;
+            this.registerSet[r] += 1;
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
-            this.registerSet[r] -= 2;
+            this.registerSet[r] -= 1;
             this._storeChar(this.registerSet[r], value);
             break;
         case CpuPdp11._ADDRESSING_INDEX:
@@ -607,7 +735,7 @@ CpuPdp11.prototype._storeCharByMode = function (modeAndR, value) {
                     (this._fetchWord() + this.registerSet[r]) & 0xffff);
             break;
         default:
-            throw new RangeError("Invalid indexing mode: " + mode);
+            throw new RangeError("Invalid indexing mode: bs," + mode);
     }
 };
 
@@ -639,7 +767,7 @@ CpuPdp11.prototype._storeWordByMode = function (modeAndR, value) {
                     (this._fetchWord() + this.registerSet[r]) & 0xffff, value);
             break;
         default:
-            throw new RangeError("Invalid indexing mode: " + mode);
+            throw new RangeError("Invalid indexing mode: ws," + mode);
     }
 };
 
@@ -670,8 +798,10 @@ CpuPdp11.prototype._operationWordByMode = function (modeAndR, operation) {
                     operation(this._loadWord(this.registerSet[r])));
             break;
         case CpuPdp11._ADDRESSING_INDEX:
-            throw new RangeError("Unimplemented indexing mode: " + mode);
+            var address = (this._fetchWord() + this.registerSet[r]) & 0xffff;
+            this._storeWord(address, operation(this._loadWord(address)));
+            break;
         default:
-            throw new RangeError("Invalid indexing mode: " + mode);
+            throw new RangeError("Invalid indexing mode: ow," + mode);
     }
 };
