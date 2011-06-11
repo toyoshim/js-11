@@ -9,10 +9,10 @@
  * @author Takashi Toyoshima <toyoshim@gmail.com>
  */
 function MemoryUnibus () {
+    this.logging = false;
     this.rk = new DeviceRk(this);
     this.dl = new DeviceDl(this);
     this.ram = new Uint16Array(65536);  // 128KB
-    this.logging = false;
     for (var i = 0; i < 65536; i++)
         this.ram[i] = 0;
 }
