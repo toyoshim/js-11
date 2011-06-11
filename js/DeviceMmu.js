@@ -48,6 +48,8 @@ DeviceMmu.prototype.init = function () {
     this.mmuEnabled = false;
     for (i = 0; i < DeviceMmu._PAGE_SIZE; i++) {
         var base = i * DeviceMmu._MINIMUM_BYTES_PER_PAGE;
+        if (base >= 0160000)
+            base |= 0600000;
         this.mmuKernelBases[i] = base;
         this.mmuUserBases[i] = base;
     }
@@ -60,10 +62,6 @@ DeviceMmu.prototype.init = function () {
  * @return address physical address
  */
 DeviceMmu.prototype.getPhysicalAddress = function (address, mode) {
-    if (address >= 0160000) {
-        // UNIBUS I/O device registers
-        address |= 0600000;
-    }
     if (this.mmuEnabled) {
         if (mode == DeviceMmu.MODE_KERNEL) {
             return this.mmuKernelBases[
@@ -76,6 +74,8 @@ DeviceMmu.prototype.getPhysicalAddress = function (address, mode) {
         } else {
             throw new Error("MMU: Invalid mode.");
         }
+    } else if (address >= 0160000) {
+        address |= 0600000;
     }
     return address;
 };
@@ -145,6 +145,7 @@ DeviceMmu.prototype.write = function (address, data) {
                         " (not implemented)");
             else
                 Log.getLog().info("MMU SR0: Write " + Log.toOct(data, 7));
+            Log.getLog().info("MMU: " + (this.mmuEnabled ? "Enable" : "Disable"));
             return true;
         case 0777574:
             // MMU SR1
