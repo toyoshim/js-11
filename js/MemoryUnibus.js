@@ -30,8 +30,8 @@ MemoryUnibus.prototype.constructor = MemoryUnibus;
  */
 MemoryUnibus.prototype.writeChar = function (address, data) {
     if (this.logging)
-        Log.getLog().info("WC " + Log.toOct(address, 7) + " <= $" +
-                Log.toHex(data , 2));
+        Log.getLog().info("WC: " + Log.toOct(address, 7) + " <= " +
+                Log.toOct(data , 4));
     var result = this._read(address);
     if (result < 0)
         throw RangeError("Memory " + Log.toOct(address, 7) +
@@ -59,9 +59,6 @@ MemoryUnibus.prototype.readChar = function (address) {
         else
             result = (result >> 8) & 0xff;
     }
-    if (this.logging)
-        Log.getLog().info("RC " + Log.toOct(address, 7) + " => $" +
-                Log.toHex(result , 2));
     if (result < 0)
         throw RangeError("Memory " + Log.toOct(address, 7) +
                 " read not implemented.");
@@ -75,8 +72,8 @@ MemoryUnibus.prototype.readChar = function (address) {
  */
 MemoryUnibus.prototype.writeShort = function (address, data) {
     if (this.logging)
-        Log.getLog().info("WS " + Log.toOct(address, 7) + " <= $" +
-                Log.toHex(data , 4));
+        Log.getLog().info("WS: " + Log.toOct(address, 7) + " <= " +
+                Log.toOct(data , 7));
     if ((address & 1) != 0)
         throw RangeError("Memory alignment error.");
     if (!this._write(address, data))
@@ -91,9 +88,6 @@ MemoryUnibus.prototype.writeShort = function (address, data) {
  */
 MemoryUnibus.prototype.readShort = function (address) {
     var result = this._read(address);
-    if (this.logging)
-        Log.getLog().info("RS " + Log.toOct(address, 7) + " => $" +
-                Log.toHex(result , 4));
     if ((address & 1) != 0)
         throw RangeError("Memory alignment error.");
     if (result < 0)
