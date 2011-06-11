@@ -188,14 +188,11 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0030000:  // BIT
                 var src = this._loadWordByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
-                        function (dst, src) {
-                            var result = src & dst;
-                            this.flagN = (result >> 15) & 1;
-                            this.flagZ = (result == 0) ? 1 : 0;
-                            this.flagV = 0;
-                            return result;
-                        });
+                var dst = this._loadWordByMode(instruction & 0000077);
+                var result = src & dst;
+                this.flagN = (result >> 15) & 1;
+                this.flagZ = (result == 0) ? 1 : 0;
+                this.flagV = 0;
                 return;
             case 0040000:  // BIC
                 var src = this._loadWordByMode((instruction & 0007700) >> 6);
