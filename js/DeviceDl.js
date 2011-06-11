@@ -10,6 +10,7 @@
  */
 function DeviceDl (bus) {
     this.bus = bus;
+    this.keycode = -1;
 }
 
 /**
@@ -50,9 +51,19 @@ DeviceDl.prototype.read = function (address) {
     var result = -1;
 
     switch (address) {
+        case DeviceDl.ADDRESS_RCSR:  // DL11 Receiver Status Register
+            result = 0x0000;
+            if (this.keycode > 0)
+                result |= 0x0080;
+            Log.getLog().warn("DL11 RCSR => " + Log.toHex(result, 4) + " (Not implemented.)");
+            break;
         case DeviceDl.ADDRESS_RBUF:  // DL11 Receiver Data Buffer Register
             result = 0xffff;
-            Log.getLog().warn("DL11 XBUF => 0xffff (Not implemented.)");
+            if (this.keycode > 0) {
+                result = this.keycode;
+                this.keycode = -1;
+            }
+            Log.getLog().info("DL11 XBUF => " + Log.toHex(result, 4));
             break;
         case DeviceDl.ADDRESS_XCSR:  // DL11 Transmitter Status Register
             result = 0x0080;  // TRANSMITTER READY
@@ -62,4 +73,13 @@ DeviceDl.prototype.read = function (address) {
             break;
     }
     return result;
+};
+
+/**
+ * Set input keycode.
+ * @param code keycode
+ */
+DeviceDl.prototype.set = function (code) {
+    this.keycode = code;
+    Log.getLog().info("DL11 SET <= 0x" + Log.toHex(code, 2));
 };

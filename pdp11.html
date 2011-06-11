@@ -25,6 +25,9 @@
                 Log.getLog().fatal(e);
             }
         });
+        document.onkeypress = function (e) {
+            pdp11.memory.dl.set(e.which);
+        };
     </script>
 </body>
 </html>
