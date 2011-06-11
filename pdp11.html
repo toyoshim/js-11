@@ -11,17 +11,32 @@
     <script src="js/DeviceRk.js"></script>
     <script src="js/DeviceTt.js"></script>
     <script src="js/Pdp11.js"></script>
+    <script src="term.js"></script>
 </head>
 <body>
+    <pre>TODOs:
+* Remove browser dependant code into separated class.
+* Log level elimination.
+* Exception handling.
+* Unimplemented instructions.
+* Unimplemented addressing mode.
+* etc, ...
+==== CONSOLE ====</pre>
+    <pre id="term" style="background-color:black; color: green; display: inline-block;"></pre>
+    <pre>==== DEBUG LOG ====</pre>
     <pre id="log"></pre>
     <script>
         Log.setLog(new Log("log", true));
         var pdp11 = new Pdp11();
-/**/
+/*
         Log.setLog(new Log("log", false));
         pdp11.logging = true;
         pdp11.memory.logging = true;
-/**/
+*/
+        var term = new Term("term", 80, 25);
+        term.appendString("v6/v8 booting...\n");
+        pdp11.memory.tt.setCallback(function (c) { term.appendCharacter(c); });
+        document.onkeypress = function (e) { term.appendCharacter(e.which)};
         pdp11.memory.tt.set(new String("unix\n"));
         pdp11.mountRk0("./data/v6root");
         pdp11.bootRk0();
