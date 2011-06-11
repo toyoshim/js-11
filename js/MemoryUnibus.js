@@ -109,6 +109,8 @@ MemoryUnibus.prototype.readShort = function (address) {
  * @return success
  */
 MemoryUnibus.prototype._write = function (address, data) {
+    if (data < 0)
+        Log.getLog().fatal("Internal error: write negative value.");
     if (address < 0x20000) {
         this.ram[address >> 1] = data;
         return true;
