@@ -21,6 +21,21 @@ function DeviceRk (bus) {
 }
 
 /**
+ * Public constants.
+ */
+DeviceRk.ADDRESS_RKDS = 0777400;
+DeviceRk.ADDRESS_RKER = 0777402;
+DeviceRk.ADDRESS_RKCS = 0777404;
+DeviceRk.ADDRESS_RKWC = 0777406;
+DeviceRk.ADDRESS_RKBA = 0777410;
+DeviceRk.ADDRESS_RKDA = 0777412;
+
+DeviceRk.FUNCTION_MASK = 0x0e;
+DeviceRk.FUNCTION_READ = 4;
+
+DeviceRk.CONTROL_GO = 1;
+
+/**
  * Write 16-bit data to addressed memory.
  * @param address memory address to write
  * @param data data to write
@@ -29,11 +44,11 @@ function DeviceRk (bus) {
 DeviceRk.prototype.write = function (address, data) {
     var result = true;
     switch (address) {
-        case 0777404:
+        case DeviceRk.ADDRESS_RKCS:
             if ((data & 1)) {
                 data &= ~1;
-                var func = (data >> 1) & 7;
-                if (2 == func) {
+                var func = data & DeviceRk.FUNCTION_MASK;
+                if (func == DeviceRk.FUNCTION_READ) {
                     var count = 0x10000 - this.RKWC;
                     Log.getLog().info("RK READ");
                     Log.getLog().info("  Word Count: " + count);
@@ -51,13 +66,13 @@ DeviceRk.prototype.write = function (address, data) {
             }
             this.RKCS = data;
             break;
-        case 0777406:
+        case DeviceRk.ADDRESS_RKWC:
             this.RKWC = data;
             break;
-        case 0777410:
+        case DeviceRk.ADDRESS_RKBA:
             this.RKBA = data;
             break;
-        case 0777412:
+        case DeviceRk.ADDRESS_RKDA:
             this.RKDA = data;
             break;
         default:
@@ -75,15 +90,15 @@ DeviceRk.prototype.read = function (address) {
     var result = -1;
 
     switch (address) {
-        case 0777400:
+        case DeviceRk.ADDRESS_RKDS:
             this.RKDS |= 0x0080; // Set Drive Ready (RDY)
             result = this.RKDS;
             Log.getLog().warn("RK unimplemented I/O read.");
             break;
-        case 0777402:
+        case DeviceRk.ADDRESS_RKER:
             result = this.RKER;
             break;
-        case 0777404:
+        case DeviceRk.ADDRESS_RKCS:
             this.RKCS |= 0x0080; // Set Control Ready (RDY)
             result = this.RKCS;
             Log.getLog().warn("RK unimplemented I/O read.");

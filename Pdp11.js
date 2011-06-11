@@ -47,7 +47,11 @@ function Pdp11 () {
     this.memory.rk.mount(this._load("../data/unix0_v6_rk.dsk"));
     this.cpu = new CpuPdp11();
     this.cpu.setMemory(this.memory);
-    this.cpu.writeRegister(CpuPdp11.REGISTER_FILE_PC, 0002002);
+    this.memory.writeShort(DeviceRk.ADDRESS_RKWC, 0x10000 - 512);  // 512 Word
+    this.memory.writeShort(DeviceRk.ADDRESS_RKBA, 0);  // Bus Address
+    this.memory.writeShort(DeviceRk.ADDRESS_RKDA, 0);  // Disk Address
+    this.memory.writeShort(DeviceRk.ADDRESS_RKCS,
+            DeviceRk.FUNCTION_READ | DeviceRk.CONTROL_GO);
 }
 
 /**
