@@ -26,6 +26,7 @@ function Log (id, reverse) {
     this.reverse = reverse;
     this.lastMessage = "";
     this.lastMessageCount = 0;
+    this.logLevel = Log.INFO;
 
     // Set default log scheme.
     this.print = function (object) { /* Do nothing. */ };
@@ -71,14 +72,25 @@ function Log (id, reverse) {
     }
 }
 
-Log.log = new Log();
+/**
+ * Public constants.
+ */
+
+Log.FATAL = 0;
+Log.ERROR = 1;
+Log.WARN = 2;
+Log.WARNING = 2;
+Log.INFO = 3;
+Log.INFORMATION = 3;
+
+Log._log = new Log();
 
 /**
  * Set default log instance.
  * @param newLog Log instance to set
  */
 Log.setLog = function (newLog) {
-    Log.log = newLog;
+    Log._log = newLog;
 };
 
 /**
@@ -86,7 +98,7 @@ Log.setLog = function (newLog) {
  * @return default Log instance
  */
 Log.getLog = function () {
-    return Log.log;
+    return Log._log;
 };
 
 /**
@@ -119,6 +131,14 @@ Log.toOct = function (number, digit) {
 };
 
 /**
+ * Set log filter level
+ * @param level log level
+ */
+Log.prototype.setLevel = function (level) {
+    this.logLevel = level;
+};
+
+/**
  * Filter print message.
  * @param message message to print
  */
@@ -140,6 +160,7 @@ Log.prototype.prettyPrint = function (message) {
  * @param message fatal message
  */
 Log.prototype.fatal = function (message) {
+    if (this.logLevel < Log.FATAL) return;
     if (this.LastLevel != "FATAL") {
         this.LastLevel = "FATAL";
         this.prettyPrint("*FATAL*");
@@ -152,6 +173,7 @@ Log.prototype.fatal = function (message) {
  * @param message error message
  */
 Log.prototype.error = function (message) {
+    if (this.logLevel < Log.ERROR) return;
     if (this.LastLevel != "ERROR") {
         this.LastLevel = "ERROR";
         this.prettyPrint("*ERROR*");
@@ -164,6 +186,7 @@ Log.prototype.error = function (message) {
  * @param message warning message
  */
 Log.prototype.warn = function (message) {
+    if (this.logLevel < Log.WARN) return;
     if (this.LastLevel != "WARN") {
         this.LastLevel = "WARN";
         this.prettyPrint("*WARN*");
@@ -176,6 +199,7 @@ Log.prototype.warn = function (message) {
  * @param message information message
  */
 Log.prototype.info = function (message) {
+    if (this.logLevel < Log.INFO) return;
     if (this.LastLevel != "INFO") {
         this.LastLevel = "INFO";
         this.prettyPrint("*INFO*");
