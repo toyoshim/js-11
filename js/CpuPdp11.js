@@ -99,10 +99,12 @@ CpuPdp11.prototype.init = function () {
     }
     for (i = CpuPdp11._MODE_KERNEL; i <= CpuPdp11._MODE_USER; i++)
         this.stackPointer[i] = 0;
+    this.flagT = 0;
     this.flagN = 0;
     this.flagZ = 0;
     this.flagV = 0;
     this.flagC = 0;
+    this.priority = 0;
 };
 
 /**
@@ -506,6 +508,9 @@ CpuPdp11.prototype.runStep = function () {
             case 0000000:  // HALT
                 Log.getLog().info("HALT");
                 return;
+            case 0000005:  // RESET
+                this.memory.ioControl(MemoryUnibus.IOCONTROL_RESET, 0);
+                return;
             default:
                 throw new Error("Unknown");
         }
@@ -561,8 +566,15 @@ CpuPdp11.prototype._convertAddress = function (address) {
  * @return loaded value
  */
 CpuPdp11.prototype._loadChar = function (address) {
-    address = this._convertAddress(address);
-    return this.memory.readChar(address);
+    var physicalAddress = this._convertAddress(address);
+    if ((physicalAddress & 0400000) != 0) {
+        try{
+            return this._loadInternal(physicalAddress) & 0xff;
+        } catch (e) {
+            // Do nothing.
+        }
+    }
+    return this.memory.readChar(physicalAddress);
 };
 
 /**
@@ -571,8 +583,15 @@ CpuPdp11.prototype._loadChar = function (address) {
  * @return loaded value
  */
 CpuPdp11.prototype._loadWord = function (address) {
-    address = this._convertAddress(address);
-    return this.memory.readShort(address);
+    var physicalAddress = this._convertAddress(address);
+    if ((physicalAddress & 0400000) != 0) {
+        try{
+            return this._loadInternal(physicalAddress);
+        } catch (e) {
+            // Do nothing.
+        }
+    }
+    return this.memory.readShort(physicalAddress);
 };
 
 /**
@@ -582,6 +601,8 @@ CpuPdp11.prototype._loadWord = function (address) {
  */
 CpuPdp11.prototype._storeChar = function (address, value) {
     var physicalAddress = this._convertAddress(address);
+
+    // TODO: Enable 8-bit access to internal registers.
     this.memory.writeChar(physicalAddress, value);
 };
 
@@ -592,7 +613,54 @@ CpuPdp11.prototype._storeChar = function (address, value) {
  */
 CpuPdp11.prototype._storeWord = function (address, value) {
     var physicalAddress = this._convertAddress(address);
+    if ((physicalAddress & 0400000) != 0) {
+        try {
+            this._storeInternal(physicalAddress, value);
+        } catch (e) {
+            // Do nothing.
+        }
+    }
     this.memory.writeShort(physicalAddress, value);
+};
+
+/**
+ * Load 16-bit value from internal registers.
+ * @param address address register address
+ * @return value loaded value
+ */
+CpuPdp11.prototype._loadInternal = function (address) {
+    if (address == 0777776) {
+        // PS: Processor Status word
+        return (this.currentMode << 14) | (this.previousMode << 12) |
+                (this.generalRegisterSetSelect << 11) | (this.priority << 5) |
+                (this.flagT << 4) | (this.flagN << 3) | (this.flagZ << 2) |
+                (this.flagV << 1) | this.flagC;
+    }
+    throw new RangeError("Unknown register.");
+};
+
+/**
+ * Store 16-bit value to internal registers.
+ * @param address register address
+ * @param value value to store
+ */
+CpuPdp11.prototype._storeInternal = function (address, value) {
+    if (physicalAddress == 0777776) {
+        // PS: Processor Status word
+        this.currentMode = (value >> 14) & 3;
+        this.previousMode = (value >> 12) & 3;
+        this._storeRegister();
+        this.generalRegisterSetSelect = (value >> 11) & 1;
+        this._loadRegister();
+        this.priority = (value >> 5) & 7;
+        this.flagT = (value >> 4) & 1;
+        this.flagN = (value >> 3) & 1;
+        this.flagZ = (value >> 2) & 1;
+        this.flagV = (value >> 1) & 1;
+        this.flagC = value & 1;
+        return;
+    }
+    throw new RangeError("Unknown register.")
 };
 
 /**
