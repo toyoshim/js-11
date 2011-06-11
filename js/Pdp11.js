@@ -68,7 +68,7 @@ function Pdp11 () {
  * Run emulation.
  */
 Pdp11.prototype.run = function () {
-    for (var i = 0; i < 1024; i++) {
+    for (var i = 0; i < 10000; i++) {
         if (this.logging)
             this._dump();
         this.cpu.runStep();

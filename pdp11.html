@@ -16,7 +16,6 @@
 <body>
     <pre>TODO:
 * Remove browser dependant code into separated class.
-* Log level elimination.
 * Exception handling.
 * Unimplemented instructions.
 * Unimplemented addressing mode.
@@ -27,9 +26,11 @@
     <pre id="log"></pre>
     <script>
         Log.setLog(new Log("log", true));
+//        Log.getLog().setLevel(Log.ERROR);
         var pdp11 = new Pdp11();
 /*
         Log.setLog(new Log("log", false));
+        Log.getLog().setLevel(Log.INFO);
         pdp11.logging = true;
         pdp11.memory.logging = true;
 */
