@@ -11,8 +11,8 @@
 function DeviceMmu () {
     this.kernelPageDescriptorRegister = new Uint16Array(8);
     this.userPageDescriptorRegister = new Uint16Array(8);
-    this.kernelPageAddressRegister = new Uint16Array(8);
-    this.userPageAddressRegister = new Uint16Array(8);
+    this.kernelPageAddressRegister = new Uint32Array(8);
+    this.userPageAddressRegister = new Uint32Array(8);
     this.init();
 }
 

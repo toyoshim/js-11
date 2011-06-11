@@ -40,6 +40,21 @@ function Pdp11 () {
             }
             return result;
         };
+        Uint32Array = function (obj) {
+            var result;
+            if (obj instanceof Array) {
+                var length = ~~(obj.length / 4);
+                result = new Array(length);
+                result.byteLength = obj.length;
+                for (var i = 0; i < length; i++)
+                    result[i] = (obj[i * 4 + 3] << 24) | (obj[i * 4 + 2] << 16) |
+                            (obj[i * 4 + 1] << 8) | obj[i * 4];
+            } else {
+                result = new Array(obj);
+                result.byteLength = obj * 4;
+            }
+            return result;
+        };
     }
 
     // Initializations.
