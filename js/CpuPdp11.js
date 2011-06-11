@@ -256,6 +256,13 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagC = (src < dst) ? 1 : 0;
                 return;
             case 0130000:  // BITB
+                var src = this._readCharByMode((instruction & 0007700) >> 6);
+                var dst = this._readCharByMode(instruction & 0000077);
+                var result = src & dst;
+                this.flagN = (result >> 7) & 1;
+                this.flagZ = (result == 0) ? 1 : 0;
+                this.flagV = 0;
+                return;
             case 0140000:  // BICB
             case 0150000:  // BISB
                 break;
