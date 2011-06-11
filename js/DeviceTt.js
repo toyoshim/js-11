@@ -21,6 +21,7 @@ DeviceTt.ADDRESS_RCSR = 0777560;
 DeviceTt.ADDRESS_RBUF = 0777562;
 DeviceTt.ADDRESS_XCSR = 0777564;
 DeviceTt.ADDRESS_XBUF = 0777566;
+DeviceTt.ADDRESS_CONS = 0777570;
 
 /**
  * Write 16-bit data to addressed memory.
@@ -35,9 +36,10 @@ DeviceTt.prototype.write = function (address, data) {
             Log.getLog().warn("TT XCSR <= " + Log.toHex(data, 4));
             break;
         case DeviceTt.ADDRESS_XBUF:  // TT Transmitter Data Buffer Register
-            Log.getLog().warn("CONSOLE: '" + String.fromCharCode(data) + "'");
+            Log.getLog().warn("CONSOLE: '" + String.fromCharCode(data & 0xff) +
+                    "' (" + Log.toHex(data, 4) + ")");
             if (this.callback != null)
-                this.callback(String.fromCharCode(data));
+                this.callback(String.fromCharCode(data & 0xff));
             break;
         default:
             result = false;
@@ -71,6 +73,10 @@ DeviceTt.prototype.read = function (address) {
         case DeviceTt.ADDRESS_XCSR:  // TT Transmitter Status Register
             result = 0x0080;  // TRANSMITTER READY
             Log.getLog().warn("TT XCSR => 0x0080 (Not implemented.)");
+            break;
+        case DeviceTt.ADDRESS_CONS:  // Console Switch Register
+            result = 0xffff;
+            Log.getLog().warn("CONS => 0xffff (Not implemented.)");
             break;
         default:
             break;
