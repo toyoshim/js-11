@@ -71,6 +71,7 @@ CpuPdp11._MODE_USER = 2;
 CpuPdp11._ADDRESSING_REGISTER = 0;
 CpuPdp11._ADDRESSING_REGISTER_DEFERRED = 1;
 CpuPdp11._ADDRESSING_AUTOINCREMENT = 2;
+CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED = 3;
 CpuPdp11._ADDRESSING_AUTODECREMENT = 4;
 CpuPdp11._ADDRESSING_INDEX = 6;
 
@@ -443,7 +444,7 @@ CpuPdp11.prototype._indexByMode = function (modeAndR) {
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             throw new Error("Invalid indexing.");
         case CpuPdp11._ADDRESSING_INDEX:
-            result = (this.registerSet[r] + this._fetchWord()) & 0xffff;
+            result = (this._fetchWord() + this.registerSet[r]) & 0xffff;
             break;
         default:
             throw new RangeError("Invalid indexing mode: " + mode);
@@ -469,6 +470,11 @@ CpuPdp11.prototype._loadCharByMode = function (modeAndR) {
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
             result = this._loadChar(this.registerSet[r]);
             this.registerSet[r] += 1;
+            break;
+        case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
+            result = this._loadWord(this.registerSet[r]);
+            this.registerSet[r] += 2;
+            result = this._loadChar(result);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             this.registerSet[r] -= 1;
