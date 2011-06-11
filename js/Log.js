@@ -148,7 +148,8 @@ Log.prototype.prettyPrint = function (message) {
         return;
     }
     if (this.lastMessageCount != 0) {
-        this.print("... repeated " + this.lastMessageCount + "times");
+        this.print("... repeated " + (this.lastMessageCount + 1) +
+                " times ...");
         this.lastMessageCount = 0;
     }
     this.lastMessage = message;

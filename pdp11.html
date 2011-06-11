@@ -24,7 +24,44 @@
 * MUL/DIV detail implementation.
 * etc, ...
 ==== CONSOLE ====</pre-->
+    <script>
+        pdp11_reset = function () {
+            pdp11.cpu.init();
+            pdp11.bootRk0();
+            pdp11.memory.tt.set(new String("unix\n"));
+            tid = setInterval(pdp11_loop, 10);
+        };
+        pdp11_select = function () {
+            switch (document.log.level.selectedIndex) {
+                case 0:
+                    Log.getLog().setLevel(Log.INFO);
+                    break;
+                case 1:
+                    Log.getLog().setLevel(Log.WARN);
+                    break;
+                case 2:
+                    Log.getLog().setLevel(Log.ERROR);
+                    break;
+                case 3:
+                    Log.getLog().setLevel(Log.FATAL);
+                    break;
+            }
+        };
+        pdp11_loop = function() {
+            try {
+                pdp11.run();
+            } catch (e) {
+                clearInterval(tid);
+                Log.getLog().fatal(e);
+            }
+        };
+    </script>
     <pre id="term" style="background-color:black; color: green; display: inline-block;"></pre>
+    <pre><form name="log"><input type="button" value="reset" onclick="pdp11_reset();"> LOG LEVEL:<select name="level" onchange="pdp11_select();">
+        <option>INFO</option>
+        <option>WARN</option>
+        <option>ERROR</option>
+        <option selected="selected">FATAL</option></select></form></pre>
     <pre>==== DEBUG LOG ====</pre>
     <pre id="log"></pre>
     <script>
@@ -40,21 +77,11 @@
         var term = new Term("term", 80, 25);
         term.appendString("v6/js-11 booting from rk0 ...\n");
         pdp11.memory.tt.setCallback(function (c) { term.appendCharacter(c); });
-        document.onkeypress = function (e) { term.appendCharacter(e.which)};
+        document.onkeypress = function (e) { pdp11.memory.tt.set(e.which); };
         pdp11.memory.tt.set(new String("unix\n"));  // Queue auto-boot console inputs
         pdp11.mountRk0("./data/v6root");
         pdp11.bootRk0();
-        tid = setInterval(function() {
-            try {
-                pdp11.run();
-            } catch (e) {
-                clearInterval(tid);
-                Log.getLog().fatal(e);
-            }
-        }, 10);
-        document.onkeypress = function (e) {
-            pdp11.memory.tt.set(e.which);
-        };
+        var tid = setInterval(pdp11_loop, 10);
     </script>
 </body>
 </html>
