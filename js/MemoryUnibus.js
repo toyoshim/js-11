@@ -10,6 +10,7 @@
  */
 function MemoryUnibus () {
     this.rk = new DeviceRk(this);
+    this.dl = new DeviceDl(this);
     this.ram = new Uint16Array(65536);  // 128KB
     this.logging = false;
     for (var i = 0; i < 65536; i++)
@@ -112,15 +113,9 @@ MemoryUnibus.prototype._write = function (address, data) {
         this.ram[address >> 1] = data;
         return true;
     }
-    if (address == 0777564) {  // DL11 Transmitter Status Register (XCSR)
-        Log.getLog().warn("DL11 XCSR <= " + Log.toHex(data, 4));
-        return true;
-    }
-    if (address == 0777566) {  // DL11 Transmitter Data Buffer Register (XBUF)
-        Log.getLog().info("DL11 XBUF <= '" + String.fromCharCode(data) + "'");
-        return true;
-    }
-    return this.rk.write(address, data);
+    if (this.rk.write(address, data)) return true;
+    if (this.dl.write(address, data)) return true;
+    return false;
 };
 
 /**
@@ -131,11 +126,10 @@ MemoryUnibus.prototype._write = function (address, data) {
 MemoryUnibus.prototype._read = function (address) {
     if (address < 0x20000)
         return this.ram[address >> 1];
-    if (address == 0777562) {  // DL11 Receiver Data Buffer Register (RBUF)
-        return 0xffff;
-    }
-    if (address == 0777564) {  // DL11 Transmitter Status Register (XCSR)
-        return 0x0080;  // TRANSMITTER READY
-    }
-    return this.rk.read(address);
+    var result = -1;
+    if (result < 0)
+        result = this.rk.read(address);
+    if (result < 0)
+        result = this.dl.read(address);
+    return result;
 };
