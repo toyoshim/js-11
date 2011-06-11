@@ -351,82 +351,39 @@ CpuPdp11.prototype.runStep = function () {
         }
         switch (instruction & 0177400) {  // Program control instructions
             case 0000400:  // BR
-                var offset = instruction & 0000377;
-                if ((offset & 0x80) != 0)
-                    offset = -(0x100 - offset);
-                this.registerSet[CpuPdp11.REGISTER_PC] =
-                        (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                offset * 2) & 0xffff;
+                this._doBranch(instruction & 0000377);
                 return;
             case 0001000:  // BNE
-                if (this.flagZ == 0) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagZ == 0)
+                    this._doBranch(instruction & 0000377);
                 return;
             case 0001400:  // BEQ
-                if (this.flagZ == 1) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagZ == 1)
+                    this._doBranch(instruction & 0000377);
                 return;
             case 0002000:  // BGE
-                if (this.flagN == this.flagV) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagN == this.flagV)
+                    this._doBranch(instruction & 0000377);
                 return;
             case 0100000:  // BPL
-                if (this.flagN == 0) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagN == 0)
+                    this._doBranch(instruction & 0000377);
                 return;
             case 0101000:  // BHI
-                if (this.flagC == 0 && this.flagZ == 0) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagC == 0 && this.flagZ == 0)
+                    this._doBranch(instruction & 0000377);
+                return;
+            case 0101400:  // BLOS
+                if (this.flagC == 1 || this.flagZ == 1)
+                    this._doBranch(instruction & 0000377);
                 return;
             case 0103000:  // BCC
-                if (this.flagC == 0) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagC == 0)
+                    this._doBranch(instruction & 0000377);
                 return;
             case 0103400:  // BCS
-                if (this.flagC == 1) {
-                    var offset = instruction & 0000377;
-                    if ((offset & 0x80) != 0)
-                        offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] =
-                            (this.registerSet[CpuPdp11.REGISTER_PC] +
-                                    offset * 2) & 0xffff;
-                }
+                if (this.flagC == 1)
+                    this._doBranch(instruction & 0000377);
                 return;
             default:
                 break;
@@ -531,6 +488,18 @@ CpuPdp11.prototype.runStep = function () {
                 Log.toOct(instruction, 7) + " at PC " +
                 Log.toOct(currentPc, 7));
     }
+};
+
+/**
+ * Execute branch operation.
+ * @param offset branch target offset
+ */
+CpuPdp11.prototype._doBranch = function (offset) {
+    if ((offset & 0x80) != 0)
+        offset = -(0x100 - offset);
+    this.registerSet[CpuPdp11.REGISTER_PC] =
+            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                    offset * 2) & 0xffff;
 };
 
 /**
