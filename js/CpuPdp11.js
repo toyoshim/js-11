@@ -343,6 +343,8 @@ CpuPdp11.prototype.runStep = function () {
                 }
                 return;
             case 0076000:  // XOR
+                break;
+            case 0077000:  // SOB
                 var r = (instruction & 0000700) >> 6;
                 this.registerSet[r] = (this.registerSet[r] - 1) & 0xffff;
                 if (this.registerSet[r] != 0) {
@@ -351,8 +353,6 @@ CpuPdp11.prototype.runStep = function () {
                             (this.registerSet[CpuPdp11.REGISTER_PC] -
                                     (offset * 2)) & 0xffff;
                 }
-                return;
-            case 0077000:  // SOB
                 return;
             default:
                 break;
@@ -448,6 +448,16 @@ CpuPdp11.prototype.runStep = function () {
                             this.flagV = this.flagN ^ this.flagC;
                             return result;
                         });
+                return;
+            case 0006500:  // MFPI
+                var address = this._indexByMode(instruction & 0000077);
+                Log.getLog().info("MFPI(" + this.previousMode + "->" +
+                        this.currentMode + ")");
+                var currentMode = this.currentMode;
+                this.currentMode = this.previousMode;
+                var data = this._readShort(address);
+                this.currentMode = currentMode;
+                this._writeShortByMode(CpuPdp11._ADDRESSING_PUSH, data);
                 return;
             case 0105000:  // CLRB
                 this.flagN = 0;
