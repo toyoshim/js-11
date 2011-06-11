@@ -10,7 +10,7 @@
  */
 function DeviceTt (bus) {
     this.bus = bus;
-    this.keycode = -1;
+    this.inputs = new String();
 }
 
 /**
@@ -34,7 +34,7 @@ DeviceTt.prototype.write = function (address, data) {
             Log.getLog().warn("TT XCSR <= " + Log.toHex(data, 4));
             break;
         case DeviceTt.ADDRESS_XBUF:  // TT Transmitter Data Buffer Register
-            Log.getLog().info("CONSOLE: '" + String.fromCharCode(data) + "'");
+            Log.getLog().warn("CONSOLE: '" + String.fromCharCode(data) + "'");
             break;
         default:
             result = false;
@@ -53,15 +53,15 @@ DeviceTt.prototype.read = function (address) {
     switch (address) {
         case DeviceTt.ADDRESS_RCSR:  // TT Receiver Status Register
             result = 0x0000;
-            if (this.keycode > 0)
+            if (this.inputs.length != 0)
                 result |= 0x0080;
             Log.getLog().warn("TT RCSR => " + Log.toHex(result, 4) + " (Not implemented.)");
             break;
         case DeviceTt.ADDRESS_RBUF:  // TT Receiver Data Buffer Register
             result = 0xffff;
-            if (this.keycode > 0) {
-                result = this.keycode;
-                this.keycode = -1;
+            if (this.inputs.length != 0) {
+                result = this.inputs.charCodeAt(0);
+                this.inputs = this.inputs.slice(1);
             }
             Log.getLog().info("TT XBUF => " + Log.toHex(result, 4));
             break;
@@ -76,10 +76,15 @@ DeviceTt.prototype.read = function (address) {
 };
 
 /**
- * Set input keycode.
- * @param code keycode
+ * Set input string or keycode.
+ * @param obj string or keycode
  */
-DeviceTt.prototype.set = function (code) {
-    this.keycode = code;
-    Log.getLog().info("TT SET <= 0x" + Log.toHex(code, 2));
+DeviceTt.prototype.set = function (obj) {
+    if (obj instanceof String) {
+        Log.getLog().info("TT SET <= " + obj);
+        this.inputs += obj;
+    } else {
+        Log.getLog().info("TT SET <= 0x" + Log.toHex(obj, 2));
+        this.inputs += String.fromCharCode(obj);
+    }
 };
