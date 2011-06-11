@@ -18,6 +18,10 @@ function CpuPdp11 () {
     this.generalRegisterSet[1] =
             new Uint16Array(CpuPdp11.NUM_OF_GENERAL_REGISTERS);
     this.stackPointer = new Uint16Array(3);
+    this.kernelPageDescriptorRegister = new Uint16Array(8);
+    this.userPageDescriptorRegister = new Uint16Array(8);
+    this.kernelPageAddressRegister = new Uint16Array(8);
+    this.userPageAddressRegister = new Uint16Array(8);
     this.init();
 }
 
@@ -105,6 +109,12 @@ CpuPdp11.prototype.init = function () {
     this.flagV = 0;
     this.flagC = 0;
     this.priority = 0;
+    for (i = 0; i < 8; i++) {
+        this.kernelPageDescriptorRegister[i] = 0;
+        this.userPageDescriptorRegister[i] = 0;
+        this.kernelPageAddressRegister[i] = 0;
+        this.userPageAddressRegister[i] = 0;
+    }
 };
 
 /**
@@ -616,6 +626,7 @@ CpuPdp11.prototype._storeWord = function (address, value) {
     if ((physicalAddress & 0400000) != 0) {
         try {
             this._storeInternal(physicalAddress, value);
+            return;
         } catch (e) {
             // Do nothing.
         }
@@ -629,14 +640,56 @@ CpuPdp11.prototype._storeWord = function (address, value) {
  * @return value loaded value
  */
 CpuPdp11.prototype._loadInternal = function (address) {
-    if (address == 0777776) {
-        // PS: Processor Status word
-        return (this.currentMode << 14) | (this.previousMode << 12) |
-                (this.generalRegisterSetSelect << 11) | (this.priority << 5) |
-                (this.flagT << 4) | (this.flagN << 3) | (this.flagZ << 2) |
-                (this.flagV << 1) | this.flagC;
+    switch (address) {
+        case 0772300:
+        case 0772302:
+        case 0772304:
+        case 0772306:
+        case 0772310:
+        case 0772312:
+        case 0772314:
+        case 0772316:
+            // MMU Kernel PDRs
+            return this.kernelPageDescriptorRegister[(address - 0772300) >> 1];
+        case 0772340:
+        case 0772342:
+        case 0772344:
+        case 0772346:
+        case 0772350:
+        case 0772352:
+        case 0772354:
+        case 0772356:
+            // MMU Kernel PARs
+            return this.kernelPageAddressRegister[(address - 0772340) >> 1];
+        case 0777600:
+        case 0777602:
+        case 0777604:
+        case 0777606:
+        case 0777610:
+        case 0777612:
+        case 0777614:
+        case 0777616:
+            // MMU User PDRs
+            return this.userPageDescriptorRegister[(address - 0777600) >> 1];
+        case 0777640:
+        case 0777642:
+        case 0777644:
+        case 0777646:
+        case 0777650:
+        case 0777652:
+        case 0777654:
+        case 0777656:
+            // MMU User PARs
+            return this.userPageAddressRegister[(address - 0777640) >> 1];
+        case 0777776:
+            // PS: Processor Status word
+            return (this.currentMode << 14) | (this.previousMode << 12) |
+                    (this.generalRegisterSetSelect << 11) | (this.priority << 5) |
+                    (this.flagT << 4) | (this.flagN << 3) | (this.flagZ << 2) |
+                    (this.flagV << 1) | this.flagC;
+        default:
+            throw new RangeError("Unknown register.");
     }
-    throw new RangeError("Unknown register.");
 };
 
 /**
@@ -645,22 +698,68 @@ CpuPdp11.prototype._loadInternal = function (address) {
  * @param value value to store
  */
 CpuPdp11.prototype._storeInternal = function (address, value) {
-    if (address == 0777776) {
-        // PS: Processor Status word
-        this.currentMode = (value >> 14) & 3;
-        this.previousMode = (value >> 12) & 3;
-        this._storeRegister();
-        this.generalRegisterSetSelect = (value >> 11) & 1;
-        this._loadRegister();
-        this.priority = (value >> 5) & 7;
-        this.flagT = (value >> 4) & 1;
-        this.flagN = (value >> 3) & 1;
-        this.flagZ = (value >> 2) & 1;
-        this.flagV = (value >> 1) & 1;
-        this.flagC = value & 1;
-        return;
+    switch (address) {
+        case 0772300:
+        case 0772302:
+        case 0772304:
+        case 0772306:
+        case 0772310:
+        case 0772312:
+        case 0772314:
+        case 0772316:
+            // MMU Kernel PDRs
+            this.kernelPageDescriptorRegister[(address - 0772300) >> 1] = value;
+            return;
+        case 0772340:
+        case 0772342:
+        case 0772344:
+        case 0772346:
+        case 0772350:
+        case 0772352:
+        case 0772354:
+        case 0772356:
+            // MMU Kernel PARs
+            this.kernelPageAddressRegister[(address - 0772340) >> 1] = value;
+            return;
+        case 0777600:
+        case 0777602:
+        case 0777604:
+        case 0777606:
+        case 0777610:
+        case 0777612:
+        case 0777614:
+        case 0777616:
+            // MMU User PDRs
+            this.userPageDescriptorRegister[(address - 0777600) >> 1] = value;
+            return;
+        case 0777640:
+        case 0777642:
+        case 0777644:
+        case 0777646:
+        case 0777650:
+        case 0777652:
+        case 0777654:
+        case 0777656:
+            // MMU User PARs
+            this.userPageAddressRegister[(address - 0777640) >> 1] = value;
+            return;
+        case 0777776:
+            // PS: Processor Status word
+            this.currentMode = (value >> 14) & 3;
+            this.previousMode = (value >> 12) & 3;
+            this._storeRegister();
+            this.generalRegisterSetSelect = (value >> 11) & 1;
+            this._loadRegister();
+            this.priority = (value >> 5) & 7;
+            this.flagT = (value >> 4) & 1;
+            this.flagN = (value >> 3) & 1;
+            this.flagZ = (value >> 2) & 1;
+            this.flagV = (value >> 1) & 1;
+            this.flagC = value & 1;
+            return;
+        default:
+            throw new RangeError("Unknown register.");
     }
-    throw new RangeError("Unknown register.")
 };
 
 /**
