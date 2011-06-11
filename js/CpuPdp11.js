@@ -22,6 +22,13 @@ function CpuPdp11 () {
     this.userPageDescriptorRegister = new Uint16Array(8);
     this.kernelPageAddressRegister = new Uint16Array(8);
     this.userPageAddressRegister = new Uint16Array(8);
+    // TODOs:
+    //  1. Split MMU related codes into class.
+    //  2. Update bases on MMU register access.
+    //  3. Implement MFPI.
+    //  4. Kernel maybe run!
+    this.mmuKernelBases = new Uint16Array(CpuPdp11._PAGE_SIZE);
+    this.mmuUserBases = new Uint16Array(CpuPdp11._PAGE_SIZE);
     this.init();
 }
 
@@ -71,6 +78,8 @@ CpuPdp11.REGISTER_FILE_PC = 15;
 CpuPdp11._MODE_KERNEL = 0;
 CpuPdp11._MODE_SUPERVISOR = 1;
 CpuPdp11._MODE_USER = 2;
+CpuPdp11._MODE_USER_10 = 2;
+CpuPdp11._MODE_USER_11 = 3;
 
 CpuPdp11._ADDRESSING_REGISTER = 0;
 CpuPdp11._ADDRESSING_REGISTER_DEFERRED = 1;
@@ -85,6 +94,12 @@ CpuPdp11._ADDRESSING_PUSH = (CpuPdp11._ADDRESSING_AUTODECREMENT << 3) |
         CpuPdp11.REGISTER_SP;
 CpuPdp11._ADDRESSING_POP = (CpuPdp11._ADDRESSING_AUTOINCREMENT << 3) |
         CpuPdp11.REGISTER_SP;
+
+CpuPdp11._MEMORY_SPACE_SIZE = 262144;
+CpuPdp11._MINIMUM_BYTES_PER_PAGE = 32;
+CpuPdp11._MINIMUM_BYTES_PER_PAGE_BITS = 5;
+CpuPdp11._MINIMUM_BYTES_PER_PAGE_MASK = 0x1f;
+CpuPdp11._PAGE_SIZE = CpuPdp11._MEMORY_SPACE_SIZE / CpuPdp11._MINIMUM_BYTES_PER_PAGE;
 
 /**
  * Initialize the processor.
@@ -114,6 +129,13 @@ CpuPdp11.prototype.init = function () {
         this.userPageDescriptorRegister[i] = 0;
         this.kernelPageAddressRegister[i] = 0;
         this.userPageAddressRegister[i] = 0;
+    }
+    this.SR0 = 0;
+    this.mmuEnabled = false;
+    for (i = 0; i < CpuPdp11._PAGE_SIZE; i++) {
+        var base = i * CpuPdp11._MINIMUM_BYTES_PER_PAGE;
+        this.mmuKernelBases[i] = base;
+        this.mmuUserBases[i] = base;
     }
 };
 
@@ -547,6 +569,19 @@ CpuPdp11.prototype._convertAddress = function (address) {
         // UNIBUS I/O device registers
         address |= 0600000;
     }
+    if (this.mmuEnabled) {
+        if (this.currentMode == CpuPdp11._MODE_KERNEL) {
+            return this.mmuKernelBases[
+                    address >> CpuPdp11._MINIMUM_BYTES_PER_PAGE_BITS] +
+                    (address & CpuPdp11._MINIMUM_BYTES_PER_PAGE_MASK);
+        } else if (this.currentMode == CpuPdp11._MODE_USER) {
+            return this.mmuUserBases[
+                    address >> CpuPdp11._MINIMUM_BYTES_PER_PAGE_BITS] +
+                    (address & CpuPdp11._MINIMUM_BYTES_PER_PAGE_MASK);
+        } else {
+            throw new Error("MMU: Invalid mode.");
+        }
+    }
     return address;
 };
 
@@ -629,8 +664,18 @@ CpuPdp11.prototype._loadInternal = function (address) {
         case 0772312:
         case 0772314:
         case 0772316:
-            // MMU Kernel PDRs
+            // MMU Kernel Instruction / Data PDRs
             return this.kernelPageDescriptorRegister[(address - 0772300) >> 1];
+        case 0772320:
+        case 0772322:
+        case 0772324:
+        case 0772326:
+        case 0772330:
+        case 0772332:
+        case 0772334:
+        case 0772336:
+            // MMU Kernel Data PDRs (separate I/D space is not implemented)
+            return 0;
         case 0772340:
         case 0772342:
         case 0772344:
@@ -639,8 +684,30 @@ CpuPdp11.prototype._loadInternal = function (address) {
         case 0772352:
         case 0772354:
         case 0772356:
-            // MMU Kernel PARs
+            // MMU Kernel Instruction / Data PARs
             return this.kernelPageAddressRegister[(address - 0772340) >> 1];
+        case 0772360:
+        case 0772362:
+        case 0772364:
+        case 0772366:
+        case 0772370:
+        case 0772372:
+        case 0772374:
+        case 0772376:
+            // MMU Kernel Data PARs (separate I/D space is not implemented)
+            return 0;
+        case 0777572:
+            // MMU SR0
+            Log.getLog().info("MMU SR0: Read not implemented.");
+            return this.SR0;
+        case 0777574:
+            // MMU SR1
+            Log.getLog().warn("MMU SR1: Read not implemented.");
+            return 0;
+        case 0777576:
+            // MMU SR2
+            Log.getLog().warn("MMU SR2: Read not implemented.");
+            return 0;
         case 0777600:
         case 0777602:
         case 0777604:
@@ -649,8 +716,18 @@ CpuPdp11.prototype._loadInternal = function (address) {
         case 0777612:
         case 0777614:
         case 0777616:
-            // MMU User PDRs
+            // MMU User Instruction / Data PDRs
             return this.userPageDescriptorRegister[(address - 0777600) >> 1];
+        case 0777620:
+        case 0777622:
+        case 0777624:
+        case 0777626:
+        case 0777630:
+        case 0777632:
+        case 0777634:
+        case 0777636:
+            // MMU User Data PDRs (separate I/D space is not implemented)
+            return 0;
         case 0777640:
         case 0777642:
         case 0777644:
@@ -659,8 +736,18 @@ CpuPdp11.prototype._loadInternal = function (address) {
         case 0777652:
         case 0777654:
         case 0777656:
-            // MMU User PARs
+            // MMU User Instruction / Data PARs
             return this.userPageAddressRegister[(address - 0777640) >> 1];
+        case 0777660:
+        case 0777662:
+        case 0777664:
+        case 0777666:
+        case 0777670:
+        case 0777672:
+        case 0777674:
+        case 0777676:
+            // MMU User Data PARs (separate I/D space is not implemented)
+            return 0;
         case 0777776:
             // PS: Processor Status word
             return (this.currentMode << 14) | (this.previousMode << 12) |
@@ -687,9 +774,22 @@ CpuPdp11.prototype._storeInternal = function (address, value) {
         case 0772312:
         case 0772314:
         case 0772316:
-            // MMU Kernel PDRs
+            // MMU Kernel Instruction / Data PDRs
             this.kernelPageDescriptorRegister[(address - 0772300) >> 1] = value;
+            Log.getLog().warn("MMU KPDR[" + ((address - 0772300) >> 1) +
+                    "]: Write " + Log.toOct(value, 7) +
+                    " (not implemented)");
             return;
+        case 0772320:
+        case 0772322:
+        case 0772324:
+        case 0772326:
+        case 0772330:
+        case 0772332:
+        case 0772334:
+        case 0772336:
+            // MMU Kernel Data PDRs (separate I/D space is not implemented)
+            break;
         case 0772340:
         case 0772342:
         case 0772344:
@@ -698,8 +798,41 @@ CpuPdp11.prototype._storeInternal = function (address, value) {
         case 0772352:
         case 0772354:
         case 0772356:
-            // MMU Kernel PARs
+            // MMU Kernel Instruction / Data PARs
             this.kernelPageAddressRegister[(address - 0772340) >> 1] = value;
+            Log.getLog().warn("MMU KPAR[" + ((address - 0772340) >> 1) +
+                    "]: Write " + Log.toOct(value, 7) +
+                    " (not implemented)");
+            return;
+        case 0772360:
+        case 0772362:
+        case 0772364:
+        case 0772366:
+        case 0772370:
+        case 0772372:
+        case 0772374:
+        case 0772376:
+            // MMU Kernel Data PARs (separate I/D space is not implemented)
+            break;
+        case 0777572:
+            // MMU SR0
+            this.SR0 = value;
+            this.mmuEnabled = ((value & 1) == 0) ? false : true;
+            if ((value & 0xfffe) != 0)
+                Log.getLog().warn("MMU SR0: Write " + Log.toOct(value, 7) +
+                        " (not implemented)");
+            else
+                Log.getLog().info("MMU SR0: Write " + Log.toOct(value, 7));
+            return;
+        case 0777574:
+            // MMU SR1
+            Log.getLog().warn("MMU SR1: Write " + Log.toOct(value, 7) +
+                    " (not implemented)");
+            return;
+        case 0777576:
+            // MMU SR2
+            Log.getLog().warn("MMU SR2: Write " + Log.toOct(value, 7) +
+                    " (not implemented)");
             return;
         case 0777600:
         case 0777602:
@@ -709,9 +842,22 @@ CpuPdp11.prototype._storeInternal = function (address, value) {
         case 0777612:
         case 0777614:
         case 0777616:
-            // MMU User PDRs
+            // MMU User Instruction / Data PDRs
             this.userPageDescriptorRegister[(address - 0777600) >> 1] = value;
+            Log.getLog().warn("MMU UPDR[" + ((address - 0777600) >> 1) +
+                    "]: Write " + Log.toOct(value, 7) +
+                    " (not implemented)");
             return;
+        case 0777620:
+        case 0777622:
+        case 0777624:
+        case 0777626:
+        case 0777630:
+        case 0777632:
+        case 0777634:
+        case 0777636:
+            // MMU User Data PDRs (separate I/D space is not implemented)
+            break;
         case 0777640:
         case 0777642:
         case 0777644:
@@ -720,9 +866,22 @@ CpuPdp11.prototype._storeInternal = function (address, value) {
         case 0777652:
         case 0777654:
         case 0777656:
-            // MMU User PARs
+            // MMU User Instruction / Data PARs
             this.userPageAddressRegister[(address - 0777640) >> 1] = value;
+            Log.getLog().warn("MMU UPAR[" + ((address - 0777640) >> 1) +
+                    "]: Write " + Log.toOct(value, 7) +
+                    " (not implemented)");
             return;
+        case 0777660:
+        case 0777662:
+        case 0777664:
+        case 0777666:
+        case 0777670:
+        case 0777672:
+        case 0777674:
+        case 0777676:
+            // MMU User Data PARs (separate I/D space is not implemented)
+            break;
         case 0777776:
             // PS: Processor Status word
             this.currentMode = (value >> 14) & 3;
