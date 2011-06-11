@@ -44,14 +44,9 @@ function Pdp11 () {
 
     // Initializations.
     this.memory = new MemoryUnibus();
-    this.memory.rk.mount(this._load("./data/unix0_v6_rk.dsk"));
     this.cpu = new CpuPdp11();
     this.cpu.setMemory(this.memory);
-    this.memory.writeShort(DeviceRk.ADDRESS_RKWC, 0x10000 - 512);  // 512 Word
-    this.memory.writeShort(DeviceRk.ADDRESS_RKBA, 0);  // Bus Address
-    this.memory.writeShort(DeviceRk.ADDRESS_RKDA, 0);  // Disk Address
-    this.memory.writeShort(DeviceRk.ADDRESS_RKCS,
-            DeviceRk.FUNCTION_READ | DeviceRk.CONTROL_GO);
+    this.logging = false;
 }
 
 /**
@@ -59,9 +54,30 @@ function Pdp11 () {
  */
 Pdp11.prototype.run = function () {
     for (var i = 0; i < 1024; i++) {
-//        this._dump();
+        if (this.logging)
+            this._dump();
         this.cpu.runStep();
     }
+};
+
+/**
+ * Boot from RK0.
+ */
+Pdp11.prototype.bootRk0 = function () {
+    this.cpu.writeRegister(CpuPdp11.REGISTER_FILE_R04, 0x0410);
+    this.memory.writeShort(DeviceRk.ADDRESS_RKWC, 0x10000 - 512);  // 512 Word
+    this.memory.writeShort(DeviceRk.ADDRESS_RKBA, 0);  // Bus Address
+    this.memory.writeShort(DeviceRk.ADDRESS_RKDA, 0);  // Disk Address
+    this.memory.writeShort(DeviceRk.ADDRESS_RKCS,
+            DeviceRk.FUNCTION_READ | DeviceRk.CONTROL_GO);
+};
+
+/**
+ * Mount URI as RK0.
+ * @param uri disk image uri
+ */
+Pdp11.prototype.mountRk0 = function (uri) {
+    this.memory.rk.mount(this._load(uri));
 };
 
 /**

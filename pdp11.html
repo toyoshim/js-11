@@ -17,6 +17,14 @@
     <script>
         Log.setLog(new Log("log", true));
         var pdp11 = new Pdp11();
+/**/
+        Log.setLog(new Log("log", false));
+        pdp11.logging = true;
+        pdp11.memory.logging = true;
+/**/
+        pdp11.memory.tt.set(new String("unix\n"));
+        pdp11.mountRk0("./data/v6root");
+        pdp11.bootRk0();
         tid = setInterval(function() {
             try {
                 pdp11.run();
