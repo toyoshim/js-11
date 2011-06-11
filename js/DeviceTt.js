@@ -3,12 +3,12 @@
  */
 
 /**
- * DeviceDl prototype
+ * DeviceTt prototype
  *
- * This prototype provides DL device emulation.
+ * This prototype provides TT device emulation.
  * @author Takashi Toyoshima <toyoshim@gmail.com>
  */
-function DeviceDl (bus) {
+function DeviceTt (bus) {
     this.bus = bus;
     this.keycode = -1;
 }
@@ -16,10 +16,10 @@ function DeviceDl (bus) {
 /**
  * Public constants.
  */
-DeviceDl.ADDRESS_RCSR = 0777560;
-DeviceDl.ADDRESS_RBUF = 0777562;
-DeviceDl.ADDRESS_XCSR = 0777564;
-DeviceDl.ADDRESS_XBUF = 0777566;
+DeviceTt.ADDRESS_RCSR = 0777560;
+DeviceTt.ADDRESS_RBUF = 0777562;
+DeviceTt.ADDRESS_XCSR = 0777564;
+DeviceTt.ADDRESS_XBUF = 0777566;
 
 /**
  * Write 16-bit data to addressed memory.
@@ -27,13 +27,13 @@ DeviceDl.ADDRESS_XBUF = 0777566;
  * @param data data to write
  * @return success
  */
-DeviceDl.prototype.write = function (address, data) {
+DeviceTt.prototype.write = function (address, data) {
     var result = true;
     switch (address) {
-        case DeviceDl.ADDRESS_XCSR:  // DL11 Transmitter Status Register
-            Log.getLog().warn("DL11 XCSR <= " + Log.toHex(data, 4));
+        case DeviceTt.ADDRESS_XCSR:  // TT Transmitter Status Register
+            Log.getLog().warn("TT XCSR <= " + Log.toHex(data, 4));
             break;
-        case DeviceDl.ADDRESS_XBUF:  // DL11 Transmitter Data Buffer Register
+        case DeviceTt.ADDRESS_XBUF:  // TT Transmitter Data Buffer Register
             Log.getLog().info("CONSOLE: '" + String.fromCharCode(data) + "'");
             break;
         default:
@@ -47,27 +47,27 @@ DeviceDl.prototype.write = function (address, data) {
  * @param address memory address to read
  * @return read data (-1: failure)
  */
-DeviceDl.prototype.read = function (address) {
+DeviceTt.prototype.read = function (address) {
     var result = -1;
 
     switch (address) {
-        case DeviceDl.ADDRESS_RCSR:  // DL11 Receiver Status Register
+        case DeviceTt.ADDRESS_RCSR:  // TT Receiver Status Register
             result = 0x0000;
             if (this.keycode > 0)
                 result |= 0x0080;
-            Log.getLog().warn("DL11 RCSR => " + Log.toHex(result, 4) + " (Not implemented.)");
+            Log.getLog().warn("TT RCSR => " + Log.toHex(result, 4) + " (Not implemented.)");
             break;
-        case DeviceDl.ADDRESS_RBUF:  // DL11 Receiver Data Buffer Register
+        case DeviceTt.ADDRESS_RBUF:  // TT Receiver Data Buffer Register
             result = 0xffff;
             if (this.keycode > 0) {
                 result = this.keycode;
                 this.keycode = -1;
             }
-            Log.getLog().info("DL11 XBUF => " + Log.toHex(result, 4));
+            Log.getLog().info("TT XBUF => " + Log.toHex(result, 4));
             break;
-        case DeviceDl.ADDRESS_XCSR:  // DL11 Transmitter Status Register
+        case DeviceTt.ADDRESS_XCSR:  // TT Transmitter Status Register
             result = 0x0080;  // TRANSMITTER READY
-            Log.getLog().warn("DL11 XCSR => 0x0080 (Not implemented.)");
+            Log.getLog().warn("TT XCSR => 0x0080 (Not implemented.)");
             break;
         default:
             break;
@@ -79,7 +79,7 @@ DeviceDl.prototype.read = function (address) {
  * Set input keycode.
  * @param code keycode
  */
-DeviceDl.prototype.set = function (code) {
+DeviceTt.prototype.set = function (code) {
     this.keycode = code;
-    Log.getLog().info("DL11 SET <= 0x" + Log.toHex(code, 2));
+    Log.getLog().info("TT SET <= 0x" + Log.toHex(code, 2));
 };

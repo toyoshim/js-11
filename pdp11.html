@@ -8,14 +8,13 @@
     <script src="js/Memory.js"></script>
     <script src="js/MemoryUnibus.js"></script>
     <script src="js/DeviceRk.js"></script>
-    <script src="js/DeviceDl.js"></script>
+    <script src="js/DeviceTt.js"></script>
     <script src="js/Pdp11.js"></script>
 </head>
 <body>
     <pre id="log"></pre>
     <script>
-//        Log.setLog(new Log("log", true));
-        Log.setLog(new Log("log", false));
+        Log.setLog(new Log("log", true));
         var pdp11 = new Pdp11();
         tid = setInterval(function() {
             try {
@@ -26,7 +25,7 @@
             }
         });
         document.onkeypress = function (e) {
-            pdp11.memory.dl.set(e.which);
+            pdp11.memory.tt.set(e.which);
         };
     </script>
 </body>

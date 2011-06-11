@@ -11,7 +11,7 @@
 function MemoryUnibus () {
     this.logging = false;
     this.rk = new DeviceRk(this);
-    this.dl = new DeviceDl(this);
+    this.tt = new DeviceTt(this);
     this.ram = new Uint16Array(65536);  // 128KB
     for (var i = 0; i < 65536; i++)
         this.ram[i] = 0;
@@ -116,7 +116,7 @@ MemoryUnibus.prototype._write = function (address, data) {
         return true;
     }
     if (this.rk.write(address, data)) return true;
-    if (this.dl.write(address, data)) return true;
+    if (this.tt.write(address, data)) return true;
     return false;
 };
 
@@ -132,6 +132,6 @@ MemoryUnibus.prototype._read = function (address) {
     if (result < 0)
         result = this.rk.read(address);
     if (result < 0)
-        result = this.dl.read(address);
+        result = this.tt.read(address);
     return result;
 };
