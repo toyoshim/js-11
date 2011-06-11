@@ -21,6 +21,7 @@ function DeviceMmu () {
  */
 DeviceMmu.MODE_KERNEL = CpuPdp11._MODE_KERNEL;
 DeviceMmu.MODE_USER = CpuPdp11._MODE_USER_11;
+DeviceMmu.MODE_DIRECT = -1;
 
 /**
  * Private constants.
@@ -62,6 +63,8 @@ DeviceMmu.prototype.getPhysicalAddress = function (address, mode) {
             address = this.userPageAddressRegister[
                     (address >> DeviceMmu._APF_BIT) & DeviceMmu._APF_MASK] +
                     (address & DeviceMmu._BLOCK_MASK);
+        } else if (mode == DeviceMmu.MODE_DIRECT) {
+            return address;
         } else {
             throw new Error("MMU: Invalid mode.");
         }
