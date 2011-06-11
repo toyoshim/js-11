@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>v6 on v8 !?</title>
+    <title>v6</title>
     <script src="js/Log.js"></script>
     <script src="js/Cpu.js"></script>
     <script src="js/CpuPdp11.js"></script>
@@ -10,11 +10,12 @@
     <script src="js/DeviceMmu.js"></script>
     <script src="js/DeviceRk.js"></script>
     <script src="js/DeviceTt.js"></script>
+    <script src="js/DeviceKw.js"></script>
     <script src="js/Pdp11.js"></script>
     <script src="term.js"></script>
 </head>
 <body>
-    <pre>TODO:
+    <!--pre>TODO:
 * Remove browser dependant code into separated class.
 * Exception handling.
 * Unimplemented instructions.
@@ -22,13 +23,13 @@
 * Interrupt priority.
 * MUL/DIV detail implementation.
 * etc, ...
-==== CONSOLE ====</pre>
+==== CONSOLE ====</pre-->
     <pre id="term" style="background-color:black; color: green; display: inline-block;"></pre>
     <pre>==== DEBUG LOG ====</pre>
     <pre id="log"></pre>
     <script>
         Log.setLog(new Log("log", true));
-//        Log.getLog().setLevel(Log.ERROR);
+        Log.getLog().setLevel(Log.ERROR);
         var pdp11 = new Pdp11();
 /*
         Log.setLog(new Log("log", false));
@@ -37,7 +38,7 @@
         pdp11.memory.logging = true;
 */
         var term = new Term("term", 80, 25);
-        term.appendString("v6/v8 booting...\n");
+        term.appendString("v6/js-11 booting from rk0 ...\n");
         pdp11.memory.tt.setCallback(function (c) { term.appendCharacter(c); });
         document.onkeypress = function (e) { term.appendCharacter(e.which)};
         pdp11.memory.tt.set(new String("unix\n"));  // Queue auto-boot console inputs

@@ -13,6 +13,7 @@ function MemoryUnibus () {
     this.logging = false;
     this.rk = new DeviceRk(this);
     this.tt = new DeviceTt(this);
+    this.kw = new DeviceKw(this);
     this.mmu = new DeviceMmu(this);
     this.ram = new Uint16Array(65536);  // 128KB
     for (var i = 0; i < 65536; i++)
@@ -91,7 +92,8 @@ MemoryUnibus.prototype.writeShort = function (address, data) {
         Log.getLog().info("WS: " + Log.toOct(address, 7) + " <= " +
                 Log.toOct(data , 7));
     if ((address & 1) != 0)
-        throw new RangeError("Memory alignment error.");
+        throw new RangeError("Memory alignment error to " +
+                Log.toOct(address, 7) + ".");
     if (!this._write(address, data))
         throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " write not implemented.");
@@ -105,7 +107,8 @@ MemoryUnibus.prototype.writeShort = function (address, data) {
 MemoryUnibus.prototype.readShort = function (address) {
     var result = this._read(address);
     if ((address & 1) != 0)
-        throw new RangeError("Memory alignment error.");
+        throw new RangeError("Memory alignment error to " +
+                Log.toOct(address, 7));
     if (result < 0)
         throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " read not implemented.");
@@ -128,6 +131,7 @@ MemoryUnibus.prototype._write = function (address, data) {
     if (this.mmu.write(address, data)) return true;
     if (this.rk.write(address, data)) return true;
     if (this.tt.write(address, data)) return true;
+    if (this.kw.write(address, data)) return true;
     return false;
 };
 
@@ -144,6 +148,8 @@ MemoryUnibus.prototype._read = function (address) {
         result = this.rk.read(address);
     if (result < 0)
         result = this.tt.read(address);
+    if (result < 0)
+        result = this.kw.read(address);
     return result;
 };
 
