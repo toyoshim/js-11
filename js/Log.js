@@ -24,6 +24,8 @@
 function Log (id, reverse) {
     this.lastLevel = "";
     this.reverse = reverse;
+    this.lastMessage = "";
+    this.lastMessageCount = 0;
 
     // Set default log scheme.
     this.print = function (object) { /* Do nothing. */ };
@@ -117,15 +119,32 @@ Log.toOct = function (number, digit) {
 };
 
 /**
+ * Filter print message.
+ * @param message message to print
+ */
+Log.prototype.prettyPrint = function (message) {
+    if (this.lastMessage == message) {
+        this.lastMessageCount++;
+        return;
+    }
+    if (this.lastMessageCount != 0) {
+        this.print("... repeated " + this.lastMessageCount + "times");
+        this.lastMessageCount = 0;
+    }
+    this.lastMessage = message;
+    this.print(message);
+};
+
+/**
  * Log fatal message.
  * @param message fatal message
  */
 Log.prototype.fatal = function (message) {
     if (this.LastLevel != "FATAL") {
         this.LastLevel = "FATAL";
-        this.print("*FATAL*");
+        this.prettyPrint("*FATAL*");
     }
-    this.print(message);
+    this.prettyPrint(message);
 };
 
 /**
@@ -135,9 +154,9 @@ Log.prototype.fatal = function (message) {
 Log.prototype.error = function (message) {
     if (this.LastLevel != "ERROR") {
         this.LastLevel = "ERROR";
-        this.print("*ERROR*");
+        this.prettyPrint("*ERROR*");
     }
-    this.print(message);
+    this.prettyPrint(message);
 };
 
 /**
@@ -147,9 +166,9 @@ Log.prototype.error = function (message) {
 Log.prototype.warn = function (message) {
     if (this.LastLevel != "WARN") {
         this.LastLevel = "WARN";
-        this.print("*WARN*");
+        this.prettyPrint("*WARN*");
     }
-    this.print(message);
+    this.prettyPrint(message);
 };
 
 /**
@@ -159,7 +178,7 @@ Log.prototype.warn = function (message) {
 Log.prototype.info = function (message) {
     if (this.LastLevel != "INFO") {
         this.LastLevel = "INFO";
-        this.print("*INFO*");
+        this.prettyPrint("*INFO*");
     }
-    this.print(message);
+    this.prettyPrint(message);
 };
