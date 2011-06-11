@@ -44,7 +44,7 @@ function Pdp11 () {
 
     // Initializations.
     this.memory = new MemoryUnibus();
-    this.memory.rk.mount(this._load("../data/unix0_v6_rk.dsk"));
+    this.memory.rk.mount(this._load("./data/unix0_v6_rk.dsk"));
     this.cpu = new CpuPdp11();
     this.cpu.setMemory(this.memory);
     this.memory.writeShort(DeviceRk.ADDRESS_RKWC, 0x10000 - 512);  // 512 Word
