@@ -11,6 +11,7 @@
 function DeviceTt (bus) {
     this.bus = bus;
     this.inputs = new String();
+    this.callback = null;
 }
 
 /**
@@ -35,6 +36,8 @@ DeviceTt.prototype.write = function (address, data) {
             break;
         case DeviceTt.ADDRESS_XBUF:  // TT Transmitter Data Buffer Register
             Log.getLog().warn("CONSOLE: '" + String.fromCharCode(data) + "'");
+            if (this.callback != null)
+                this.callback(String.fromCharCode(data));
             break;
         default:
             result = false;
@@ -87,4 +90,12 @@ DeviceTt.prototype.set = function (obj) {
         Log.getLog().info("TT SET <= 0x" + Log.toHex(obj, 2));
         this.inputs += String.fromCharCode(obj);
     }
+};
+
+/**
+ * Set callback for output.
+ * @param callback callback function
+ */
+DeviceTt.prototype.setCallback = function (callback) {
+    this.callback = callback;
 };
