@@ -52,17 +52,28 @@ DeviceRk.prototype.write = function (address, data) {
                 var func = data & DeviceRk.FUNCTION_MASK;
                 if (func == DeviceRk.FUNCTION_READ) {
                     var count = 0x10000 - this.RKWC;
+                    var drive = this._getDrive(this.RKDA);
+                    var sector = this._getSector(this.RKDA);
                     Log.getLog().info("RK READ:");
                     Log.getLog().info("  Word Count: " + count);
-                    Log.getLog().info("  Bus Address: " + this.RKBA);
-                    Log.getLog().info("  Disk Address: " + this.RKDA);
+                    Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
+                    Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
+                    Log.getLog().info("    drive: " + drive);
+                    Log.getLog().info("    sector: " + sector);
+                    var diskAddress = sector << 8;
                     for (var i = 0; i < count; i++) {
-                        this.bus.writeShort(this.RKBA, this.image[this.RKDA >> 1]);
+                        this.bus.writeShort(this.RKBA, this.image[diskAddress++]);
                         this.RKBA = (this.RKBA + 2) & 0xffff;
-                        this.RKDA = (this.RKDA + 2) & 0xffff;
                         this.RKWC = (this.RKWC + 1) & 0xffff;
                     }
+                    sector = diskAddress >> 8;
+                    this.RKDA = this._encodeAddress(drive, sector);
+                    Log.getLog().info("  Word Count: " + count);
+                    Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
+                    Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
+                    Log.getLog().info("    sector: " + sector);
                 } else {
+                    Log.getLog().warn("RK: func=" + func + ",data=" +data + "\n");
                     Log.getLog().warn("RK unimplemented I/O write.");
                 }
             }
@@ -95,7 +106,7 @@ DeviceRk.prototype.read = function (address) {
         case DeviceRk.ADDRESS_RKDS:
             this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
             result = this.RKDS;
-            Log.getLog().warn("RK unimplemented I/O read.");
+            Log.getLog().warn("RK unimplemented I/O read (RKDS).");
             break;
         case DeviceRk.ADDRESS_RKER:
             result = this.RKER;
@@ -103,7 +114,7 @@ DeviceRk.prototype.read = function (address) {
         case DeviceRk.ADDRESS_RKCS:
             this.RKCS |= DeviceRk.RKCS_RDY; // Control Ready
             result = this.RKCS;
-            Log.getLog().warn("RK unimplemented I/O read.");
+            Log.getLog().warn("RK unimplemented I/O read (RKCS).");
             break;
         default:
             break;
@@ -119,4 +130,40 @@ DeviceRk.prototype.mount = function (image) {
     if (image == null)
         Log.getLog().error("Invalid disk image.");
     this.image = new Uint16Array(image);
+};
+
+/**
+ * Encode disk address.
+ * |Drive|  Track   |Sect|
+ * |15.13|12.......4|3..0|
+ * Sect: 0~11 (not 0~15)
+ * @param drive drive ID
+ * @param sector sector ID (Track * 12 + Sect)
+ * @return encoded disk address for RKDA
+ */
+DeviceRk.prototype._encodeAddress = function (drive, sector) {
+    var track = ~~(sector / 12);
+    var sect = sector % 12;
+    return (drive << 13) | (track << 4) | sect;
+};
+
+/**
+ * Decode disk address and get sector ID.
+ * @param address encoded address (raw RKDA address)
+ * @return decoded sector ID
+ */
+DeviceRk.prototype._getSector = function (address) {
+    var track = (address >> 4) & 0x01ff;
+    var sect = address & 0x000f;
+    return track * 12 + sect;
+};
+
+/**
+ * Decode disk address and get drive ID.
+ * @param address encoded address (raw RKDA address)
+ * @return decoded drive ID
+ */
+DeviceRk.prototype._getDrive = function (address) {
+    var drive = (address >> 13) & 0x0007;
+    return drive;
 };
