@@ -51,9 +51,13 @@ DeviceDl.prototype.read = function (address) {
 
     switch (address) {
         case DeviceDl.ADDRESS_RBUF:  // DL11 Receiver Data Buffer Register
-            reslut = 0xffff;
+            result = 0xffff;
+            Log.getLog().warn("DL11 XBUF => 0xffff (Not implemented.)");
+            break;
         case DeviceDl.ADDRESS_XCSR:  // DL11 Transmitter Status Register
             result = 0x0080;  // TRANSMITTER READY
+            Log.getLog().warn("DL11 XCSR => 0x0080 (Not implemented.)");
+            break;
         default:
             break;
     }

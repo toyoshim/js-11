@@ -127,7 +127,7 @@ CpuPdp11.prototype.readRegister = function (index) {
     if (index == CpuPdp11.REGISTER_FILE_PC)
         return this.registerSet[CpuPdp11.REGISTER_PC];
 
-    throw new Error("should not be reached.");
+    throw new Error("Should not be reached.");
 };
 
 /**

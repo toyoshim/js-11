@@ -33,6 +33,8 @@ DeviceRk.ADDRESS_RKDA = 0777412;
 DeviceRk.FUNCTION_MASK = 0x0e;
 DeviceRk.FUNCTION_READ = 4;
 
+DeviceRk.RKDS_RDY = 0x0080;
+DeviceRk.RKCS_RDY = 0x0080;
 DeviceRk.CONTROL_GO = 1;
 
 /**
@@ -50,7 +52,7 @@ DeviceRk.prototype.write = function (address, data) {
                 var func = data & DeviceRk.FUNCTION_MASK;
                 if (func == DeviceRk.FUNCTION_READ) {
                     var count = 0x10000 - this.RKWC;
-                    Log.getLog().info("RK READ");
+                    Log.getLog().info("RK READ:");
                     Log.getLog().info("  Word Count: " + count);
                     Log.getLog().info("  Bus Address: " + this.RKBA);
                     Log.getLog().info("  Disk Address: " + this.RKDA);
@@ -91,7 +93,7 @@ DeviceRk.prototype.read = function (address) {
 
     switch (address) {
         case DeviceRk.ADDRESS_RKDS:
-            this.RKDS |= 0x0080; // Set Drive Ready (RDY)
+            this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
             result = this.RKDS;
             Log.getLog().warn("RK unimplemented I/O read.");
             break;
@@ -99,7 +101,7 @@ DeviceRk.prototype.read = function (address) {
             result = this.RKER;
             break;
         case DeviceRk.ADDRESS_RKCS:
-            this.RKCS |= 0x0080; // Set Control Ready (RDY)
+            this.RKCS |= DeviceRk.RKCS_RDY; // Control Ready
             result = this.RKCS;
             Log.getLog().warn("RK unimplemented I/O read.");
             break;
