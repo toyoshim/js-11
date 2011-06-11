@@ -463,6 +463,8 @@ CpuPdp11.prototype.runStep = function () {
                 var data = this._readShort(address);
                 this.currentMode = currentMode;
                 this._writeShortByMode(CpuPdp11._ADDRESSING_PUSH, data);
+                if (this.previousMode == this.currentMode)
+                    throw new Error("Stop infinite loop BUG on Chrome.");  // TODO
                 return;
             case 0006600:  // MTPI
                 Log.getLog().info("MTPI(" + this.previousMode + "->" +

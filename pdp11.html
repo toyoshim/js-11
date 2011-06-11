@@ -14,12 +14,13 @@
     <script src="term.js"></script>
 </head>
 <body>
-    <pre>TODOs:
+    <pre>TODO:
 * Remove browser dependant code into separated class.
 * Log level elimination.
 * Exception handling.
 * Unimplemented instructions.
 * Unimplemented addressing mode.
+* Chrome and Firefox support.
 * etc, ...
 ==== CONSOLE ====</pre>
     <pre id="term" style="background-color:black; color: green; display: inline-block;"></pre>
@@ -37,7 +38,7 @@
         term.appendString("v6/v8 booting...\n");
         pdp11.memory.tt.setCallback(function (c) { term.appendCharacter(c); });
         document.onkeypress = function (e) { term.appendCharacter(e.which)};
-        pdp11.memory.tt.set(new String("unix\n"));
+        pdp11.memory.tt.set(new String("unix\n"));  // Queue auto-boot console inputs
         pdp11.mountRk0("./data/v6root");
         pdp11.bootRk0();
         tid = setInterval(function() {
