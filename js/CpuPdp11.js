@@ -109,6 +109,7 @@ CpuPdp11.prototype.init = function () {
     this.priority = 0;
     if (this.memory != null)
         this.memory.init();
+    this.currentPc = 0;
 };
 
 /**
@@ -172,7 +173,7 @@ CpuPdp11.prototype.writeRegister = function (index, value) {
  * @see Cpu
  */
 CpuPdp11.prototype.runStep = function () {
-    var currentPc = this.registerSet[CpuPdp11.REGISTER_PC];
+    this.currentPc = this.registerSet[CpuPdp11.REGISTER_PC];
     var instruction = this._fetchWord();
     try {
         switch (instruction & 0170000) {  // Double operand instructions
@@ -373,6 +374,10 @@ CpuPdp11.prototype.runStep = function () {
                 if (this.flagN == this.flagV)
                     this._doBranch(instruction & 0000377);
                 return;
+            case 0002400:  // BLT
+                if ((this.flagN ^ this.flagV) == 1)
+                    this._doBranch(instruction & 0000377);
+                return;
             case 0100000:  // BPL
                 if (this.flagN == 0)
                     this._doBranch(instruction & 0000377);
@@ -450,7 +455,7 @@ CpuPdp11.prototype.runStep = function () {
                         });
                 return;
             case 0006500:  // MFPI
-                var address = this._indexByMode(instruction & 0000077);
+                var address = this._addressByMode(instruction & 0000077);
                 Log.getLog().info("MFPI(" + this.previousMode + "->" +
                         this.currentMode + ")");
                 var currentMode = this.currentMode;
@@ -458,6 +463,16 @@ CpuPdp11.prototype.runStep = function () {
                 var data = this._readShort(address);
                 this.currentMode = currentMode;
                 this._writeShortByMode(CpuPdp11._ADDRESSING_PUSH, data);
+                return;
+            case 0006600:  // MTPI
+                Log.getLog().info("MTPI(" + this.previousMode + "->" +
+                        this.currentMode + ")");
+                var data = this._readShortByMode(CpuPdp11._ADDRESSING_POP);
+                var address = this._addressByMode(instruction & 0000077);
+                var currentMode = this.currentMode;
+                this.currentMode = this.previousMode;
+                this._writeShort(address, data);
+                this.currentMode = currentMode;
                 return;
             case 0105000:  // CLRB
                 this.flagN = 0;
@@ -504,7 +519,7 @@ CpuPdp11.prototype.runStep = function () {
             instruction = 0;
         throw new Error(e.message + " on instruction " +
                 Log.toOct(instruction, 7) + " at PC " +
-                Log.toOct(currentPc, 7));
+                Log.toOct(this.currentPc, 7));
     }
 };
 
@@ -561,7 +576,14 @@ CpuPdp11.prototype._readChar = function (address) {
         return (this.currentMode << 6) | (this.previousMode << 4) |
                 (this.generalRegisterSetSelect << 3);
     }
-    return this.memory.readChar(physicalAddress);
+    try {
+        return this.memory.readChar(physicalAddress);
+    } catch (e) {
+        // Bus timeout
+        Log.getLog().info("BUS TIMEOUT: " + e.message + " at PC " +
+                Log.toOct(this.currentPc, 7));
+        throw new Error("BUS TIMEOUT.");
+    }
 };
 
 /**
@@ -579,7 +601,14 @@ CpuPdp11.prototype._readShort = function (address) {
                 (this.flagT << 4) | (this.flagN << 3) | (this.flagZ << 2) |
                 (this.flagV << 1) | this.flagC;
     }
-    return this.memory.readShort(physicalAddress);
+    try {
+        return this.memory.readShort(physicalAddress);
+    } catch (e) {
+        // Bus timeout
+        Log.getLog().info("BUS TIMEOUT: " + e.message + " at PC " +
+                Log.toOct(this.currentPc, 7));
+        throw new Error("BUS TIMEOUT.");
+    }
 };
 
 /**
@@ -665,6 +694,42 @@ CpuPdp11.prototype._indexByMode = function (modeAndR) {
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             throw new Error("Invalid indexing.");
+        case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
+            result = this._readShort(this.registerSet[r]);
+            this.registerSet[r] += 2;
+            break;
+        case CpuPdp11._ADDRESSING_INDEX:
+            result = (this._fetchWord() + this.registerSet[r]) & 0xffff;
+            break;
+        default:
+            throw new RangeError("Invalid indexing mode: " + mode);
+    }
+    return result;
+};
+
+/**
+ * Perform address calculation by specified addressing mode and register.
+ * @param modeAndR addressing mode and register number
+ * @return address
+ */
+CpuPdp11.prototype._addressByMode = function (modeAndR) {
+    var mode = modeAndR >> 3;
+    var r = modeAndR & 7;
+    var result;
+    switch (mode) {
+        case CpuPdp11._ADDRESSING_REGISTER:
+            throw new Error("Invalid indexing.");
+        case CpuPdp11._ADDRESSING_REGISTER_DEFERRED:
+            result = this.registerSet[r];
+            break;
+        case CpuPdp11._ADDRESSING_AUTOINCREMENT:
+            result = this.registerSet[r];
+            this.registerSet[r] += 2;
+            break;
+        case CpuPdp11._ADDRESSING_AUTODECREMENT:
+            result = this.registerSet[r];
+            this.registerSet[r] -= 2;
+            break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
             result = this._readShort(this.registerSet[r]);
             this.registerSet[r] += 2;
