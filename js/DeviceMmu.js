@@ -13,8 +13,6 @@ function DeviceMmu () {
     this.userPageDescriptorRegister = new Uint16Array(8);
     this.kernelPageAddressRegister = new Uint16Array(8);
     this.userPageAddressRegister = new Uint16Array(8);
-    this.mmuKernelBases = new Uint16Array(CpuPdp11._PAGE_SIZE);
-    this.mmuUserBases = new Uint16Array(CpuPdp11._PAGE_SIZE);
     this.init();
 }
 
@@ -22,37 +20,30 @@ function DeviceMmu () {
  * Public constants.
  */
 DeviceMmu.MODE_KERNEL = CpuPdp11._MODE_KERNEL;
-DeviceMmu.MODE_USER = CpuPdp11._MODE_USER;
+DeviceMmu.MODE_USER = CpuPdp11._MODE_USER_11;
 
 /**
  * Private constants.
  */
-DeviceMmu._MEMORY_SPACE_SIZE = 262144;
-DeviceMmu._MINIMUM_BYTES_PER_PAGE = 32;
-DeviceMmu._MINIMUM_BYTES_PER_PAGE_BITS = 5;
-DeviceMmu._MINIMUM_BYTES_PER_PAGE_MASK = 0x1f;
-DeviceMmu._PAGE_SIZE = DeviceMmu._MEMORY_SPACE_SIZE / DeviceMmu._MINIMUM_BYTES_PER_PAGE;
-
+DeviceMmu._APF_MASK = 7;
+DeviceMmu._APF_BIT = 13;
+DeviceMmu._BLOCK_MASK = 0x1fff;
 /**
  * Initialize the processor.
  */
 DeviceMmu.prototype.init = function () {
     var i;
     for (i = 0; i < 8; i++) {
-        this.kernelPageDescriptorRegister[i] = 0;
-        this.userPageDescriptorRegister[i] = 0;
-        this.kernelPageAddressRegister[i] = 0;
-        this.userPageAddressRegister[i] = 0;
+        var base = i << 13;
+        if (7 == i)
+            base |= 0600000;
+        this.kernelPageDescriptorRegister[i] = base;
+        this.userPageDescriptorRegister[i] = base;
+        this.kernelPageAddressRegister[i] = base;
+        this.userPageAddressRegister[i] = base;
     }
     this.SR0 = 0;
     this.mmuEnabled = false;
-    for (i = 0; i < DeviceMmu._PAGE_SIZE; i++) {
-        var base = i * DeviceMmu._MINIMUM_BYTES_PER_PAGE;
-        if (base >= 0160000)
-            base |= 0600000;
-        this.mmuKernelBases[i] = base;
-        this.mmuUserBases[i] = base;
-    }
 };
 
 /**
@@ -64,13 +55,13 @@ DeviceMmu.prototype.init = function () {
 DeviceMmu.prototype.getPhysicalAddress = function (address, mode) {
     if (this.mmuEnabled) {
         if (mode == DeviceMmu.MODE_KERNEL) {
-            return this.mmuKernelBases[
-                    address >> DeviceMmu._MINIMUM_BYTES_PER_PAGE_BITS] +
-                    (address & DeviceMmu._MINIMUM_BYTES_PER_PAGE_MASK);
+            address = this.kernelPageAddressRegister[
+                    (address >> DeviceMmu._APF_BIT) & DeviceMmu._APF_MASK] +
+                    (address & DeviceMmu._BLOCK_MASK);
         } else if (mode == DeviceMmu.MODE_USER) {
-            return this.mmuUserBases[
-                    address >> DeviceMmu._MINIMUM_BYTES_PER_PAGE_BITS] +
-                    (address & DeviceMmu._MINIMUM_BYTES_PER_PAGE_MASK);
+            address = this.userPageAddressRegister[
+                    (address >> DeviceMmu._APF_BIT) & DeviceMmu._APF_MASK] +
+                    (address & DeviceMmu._BLOCK_MASK);
         } else {
             throw new Error("MMU: Invalid mode.");
         }
@@ -99,8 +90,7 @@ DeviceMmu.prototype.write = function (address, data) {
             // MMU Kernel Instruction / Data PDRs
             this.kernelPageDescriptorRegister[(address - 0772300) >> 1] = data;
             Log.getLog().warn("MMU KPDR[" + ((address - 0772300) >> 1) +
-                    "]: Write " + Log.toOct(data, 7) +
-                    " (not implemented)");
+                    "]: Write " + Log.toOct(data, 7));
             return true;
         case 0772320:
         case 0772322:
@@ -121,10 +111,10 @@ DeviceMmu.prototype.write = function (address, data) {
         case 0772354:
         case 0772356:
             // MMU Kernel Instruction / Data PARs
-            this.kernelPageAddressRegister[(address - 0772340) >> 1] = data;
+            this.kernelPageAddressRegister[(address - 0772340) >> 1] =
+                    ((data & 0x0fff) << 6);
             Log.getLog().warn("MMU KPAR[" + ((address - 0772340) >> 1) +
-                    "]: Write " + Log.toOct(data, 7) +
-                    " (not implemented)");
+                    "]: Write " + Log.toOct(data, 7));
             return true;
         case 0772360:
         case 0772362:
@@ -168,8 +158,7 @@ DeviceMmu.prototype.write = function (address, data) {
             // MMU User Instruction / Data PDRs
             this.userPageDescriptorRegister[(address - 0777600) >> 1] = data;
             Log.getLog().warn("MMU UPDR[" + ((address - 0777600) >> 1) +
-                    "]: Write " + Log.toOct(data, 7) +
-                    " (not implemented)");
+                    "]: Write " + Log.toOct(data, 7));
             return true;
         case 0777620:
         case 0777622:
@@ -190,10 +179,10 @@ DeviceMmu.prototype.write = function (address, data) {
         case 0777654:
         case 0777656:
             // MMU User Instruction / Data PARs
-            this.userPageAddressRegister[(address - 0777640) >> 1] = data;
+            this.userPageAddressRegister[(address - 0777640) >> 1] =
+                    ((data & 0x0fff) << 6);
             Log.getLog().warn("MMU UPAR[" + ((address - 0777640) >> 1) +
-                    "]: Write " + Log.toOct(data, 7) +
-                    " (not implemented)");
+                    "]: Write " + Log.toOct(data, 7));
             return true;
         case 0777660:
         case 0777662:
@@ -246,7 +235,7 @@ DeviceMmu.prototype.read = function (address) {
         case 0772354:
         case 0772356:
             // MMU Kernel Instruction / Data PARs
-            return this.kernelPageAddressRegister[(address - 0772340) >> 1];
+            return this.kernelPageAddressRegister[(address - 0772340) >> 1] >> 6;
         case 0772360:
         case 0772362:
         case 0772364:
@@ -298,7 +287,7 @@ DeviceMmu.prototype.read = function (address) {
         case 0777654:
         case 0777656:
             // MMU User Instruction / Data PARs
-            return this.userPageAddressRegister[(address - 0777640) >> 1];
+            return this.userPageAddressRegister[(address - 0777640) >> 1] >> 6;
         case 0777660:
         case 0777662:
         case 0777664:
