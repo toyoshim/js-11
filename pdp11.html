@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>v6 on v8 !?</title>
+    <script src="Log.js"></script>
+    <script src="Cpu.js"></script>
+    <script src="CpuPdp11.js"></script>
+    <script src="Memory.js"></script>
+    <script src="MemoryUnibus.js"></script>
+    <script src="DeviceRk.js"></script>
+    <script src="Pdp11.js"></script>
+</head>
+<body>
+    <pre id="log"></pre>
+    <script>
+//        Log.setLog(new Log("log", true));
+        Log.setLog(new Log("log", false));
+        var pdp11 = new Pdp11();
+        tid = setInterval(function() {
+            try {
+                pdp11.run();
+            } catch (e) {
+                clearInterval(tid);
+                Log.getLog().fatal(e);
+            }
+        });
+    </script>
+</body>
+</html>
