@@ -645,7 +645,7 @@ CpuPdp11.prototype._loadInternal = function (address) {
  * @param value value to store
  */
 CpuPdp11.prototype._storeInternal = function (address, value) {
-    if (physicalAddress == 0777776) {
+    if (address == 0777776) {
         // PS: Processor Status word
         this.currentMode = (value >> 14) & 3;
         this.previousMode = (value >> 12) & 3;

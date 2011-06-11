@@ -39,14 +39,14 @@ MemoryUnibus.prototype.writeChar = function (address, data) {
                 Log.toOct(data , 4));
     var result = this._read(address);
     if (result < 0)
-        throw RangeError("Memory " + Log.toOct(address, 7) +
+        throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " write not implemented.");
     if ((address & 1) == 0)
         result = (result & 0xff00) | data;
     else
         result = (result & 0x00ff) | (data << 8);
     if (!this._write(address, result))
-        throw RangeError("Memory " + Log.toOct(address, 7) +
+        throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " write not implemented.");
 };
 
@@ -65,7 +65,7 @@ MemoryUnibus.prototype.readChar = function (address) {
             result = (result >> 8) & 0xff;
     }
     if (result < 0)
-        throw RangeError("Memory " + Log.toOct(address, 7) +
+        throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " read not implemented.");
     return result;
 };
@@ -80,9 +80,9 @@ MemoryUnibus.prototype.writeShort = function (address, data) {
         Log.getLog().info("WS: " + Log.toOct(address, 7) + " <= " +
                 Log.toOct(data , 7));
     if ((address & 1) != 0)
-        throw RangeError("Memory alignment error.");
+        throw new RangeError("Memory alignment error.");
     if (!this._write(address, data))
-        throw RangeError("Memory " + Log.toOct(address, 7) +
+        throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " write not implemented.");
 };
 
@@ -94,9 +94,9 @@ MemoryUnibus.prototype.writeShort = function (address, data) {
 MemoryUnibus.prototype.readShort = function (address) {
     var result = this._read(address);
     if ((address & 1) != 0)
-        throw RangeError("Memory alignment error.");
+        throw new RangeError("Memory alignment error.");
     if (result < 0)
-        throw RangeError("Memory " + Log.toOct(address, 7) +
+        throw new RangeError("Memory " + Log.toOct(address, 7) +
                 " read not implemented.");
     return result;
 };
