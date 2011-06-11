@@ -283,7 +283,17 @@ CpuPdp11.prototype.runStep = function () {
                 this.registerSet[CpuPdp11.REGISTER_PC] = pc;
                 return;
             case 0070000:  // MUL
-                break;
+                var r = (instruction & 0000600) >> 6;
+                var dst = this.registerSet[r];
+                var src = this._readShortByMode(instruction & 0000077);
+                var result = dst * src;
+                this.registerSet[r + 0] = (result >> 32) & 0xffff;
+                this.registerSet[r + 1] = result & 0xffff;
+                this.flagN = (result >> 31) & 1;
+                this.flagZ = (result == 0) ? 1 : 0;
+                this.flagV = 0;
+                this.flagC = ((result > 077777) || (result < -0100000));
+                return;
             case 0071000:  // DIV
                 var r = (instruction & 0000600) >> 6;
                 var dst = (this.registerSet[r] << 16) |
