@@ -918,7 +918,7 @@ CpuPdp11.prototype._writeCharByMode = function (modeAndR, value) {
     var r = modeAndR & 7;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
-            this.registerSet[r] = (this.registerSet[r] & 0xff00) | value;
+            this.registerSet[r] = value;
             break;
         case CpuPdp11._ADDRESSING_REGISTER_DEFERRED:
             this._writeChar(this.registerSet[r], value, this.currentMode);
