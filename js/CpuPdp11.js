@@ -185,10 +185,25 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagC = (src < dst) ? 1 : 0;
                 return;
             case 0030000:  // BIT
+                break;
             case 0040000:  // BIC
+                var src = this._loadWordByMode((instruction & 0007700) >> 6);
+                var dst = this._loadWordByMode(instruction & 0000077);
+                var result = dst & ~src;
+                this.flagN = (result >> 15) & 1;
+                this.flagZ = (result == 0) ? 1 : 0;
+                this.flagV = 0;
+                return;
             case 0050000:  // BIS
             case 0060000:  // ADD
+                break;
             case 0110000:  // MOVB
+                var src = this._loadCharByMode((instruction & 0007700) >> 6);
+                this.flagN = (src >> 7) & 1;
+                this.flagZ = (src == 0) ? 1 : 0;
+                this.flagV = 0;
+                this._storeCharByMode(instruction & 0000077, src);
+                return;
             case 0120000:  // CMPB
             case 0130000:  // BITB
             case 0140000:  // BICB
@@ -217,14 +232,38 @@ CpuPdp11.prototype.runStep = function () {
                 var offset = instruction & 0000377;
                 if ((offset & 0x80) != 0)
                     offset = -(0x100 - offset);
-                this.registerSet[CpuPdp11.REGISTER_PC] += offset * 2;
+                this.registerSet[CpuPdp11.REGISTER_PC] =
+                        (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                offset * 2) & 0xffff;
                 return;
             case 0001000:  // BNE
                 if (this.flagZ == 0) {
                     var offset = instruction & 0000377;
                     if ((offset & 0x80) != 0)
                         offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] += offset * 2;
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
+                }
+                return;
+            case 0001400:  // BEQ
+                if (this.flagZ == 1) {
+                    var offset = instruction & 0000377;
+                    if ((offset & 0x80) != 0)
+                        offset = -(0x100 - offset);
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
+                }
+                return;
+            case 0002000:  // BGE
+                if (this.flagN == this.flagV) {
+                    var offset = instruction & 0000377;
+                    if ((offset & 0x80) != 0)
+                        offset = -(0x100 - offset);
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
                 }
                 return;
             case 0100000:  // BPL
@@ -232,7 +271,19 @@ CpuPdp11.prototype.runStep = function () {
                     var offset = instruction & 0000377;
                     if ((offset & 0x80) != 0)
                         offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] += offset * 2;
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
+                }
+                return;
+            case 0101000:  // BHI
+                if (this.flagC == 0 && this.flagZ == 0) {
+                    var offset = instruction & 0000377;
+                    if ((offset & 0x80) != 0)
+                        offset = -(0x100 - offset);
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
                 }
                 return;
             case 0103000:  // BCC
@@ -240,7 +291,9 @@ CpuPdp11.prototype.runStep = function () {
                     var offset = instruction & 0000377;
                     if ((offset & 0x80) != 0)
                         offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] += offset * 2;
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
                 }
                 return;
             case 0103400:  // BCS
@@ -248,7 +301,9 @@ CpuPdp11.prototype.runStep = function () {
                     var offset = instruction & 0000377;
                     if ((offset & 0x80) != 0)
                         offset = -(0x100 - offset);
-                    this.registerSet[CpuPdp11.REGISTER_PC] += offset * 2;
+                    this.registerSet[CpuPdp11.REGISTER_PC] =
+                            (this.registerSet[CpuPdp11.REGISTER_PC] +
+                                    offset * 2) & 0xffff;
                 }
                 return;
             default:
@@ -463,7 +518,8 @@ CpuPdp11.prototype._loadCharByMode = function (modeAndR) {
     var result;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
-            throw new RangeError("Unimplemented indexing mode: " + mode);
+            result = this.registerSet[r] & 0xff;
+            break;
         case CpuPdp11._ADDRESSING_REGISTER_DEFERRED:
             result = this._loadChar(this.registerSet[r]);
             break;
