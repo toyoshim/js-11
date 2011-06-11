@@ -59,30 +59,8 @@ function Pdp11 () {
  */
 Pdp11.prototype.run = function () {
     for (var i = 0; i < 1024; i++) {
-/*
-        var log = "";
-        log += "PC:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4) + ",";
-        log += "R0:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R00), 4) + ",";
-        log += "R1:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R01), 4) + ",";
-        log += "R2:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R02), 4) + ",";
-        log += "R3:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R03), 4) + ",";
-        log += "R4:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R04), 4) + ",";
-        log += "R5:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R05), 4) + ",";
-        log += "R6:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_KSP), 4) + ",";
-        log += "R7:$" + Log.toHex(
-                this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4);
-        Log.getLog().info(log);
-*/
-        this.cpu.runStep();
 //        this._dump();
+        this.cpu.runStep();
     }
 };
 
@@ -90,24 +68,25 @@ Pdp11.prototype.run = function () {
  * Dump register information.
  */
 Pdp11.prototype._dump = function () {
-    var dump = "-----------\n";
-    dump += "R0: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_R00), 7) + "\n";
-    dump += "R1: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_R01), 7) + "\n";
-    dump += "R2: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_R02), 7) + "\n";
-    dump += "R3: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_R03), 7) + "\n";
-    dump += "R4: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_R04), 7) + "\n";
-    dump += "R5: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_R05), 7) + "\n";
-    dump += "SP: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_KSP), 7) + "\n";
-    dump += "PC: " + Log.toOct(this.cpu.readRegister(
-            CpuPdp11.REGISTER_FILE_PC ), 7) + "\n";
-    dump += "-----------";
+    var dump = "";
+    dump += "PC:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4) + ",";
+    dump += "R0:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R00), 4) + ",";
+    dump += "R1:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R01), 4) + ",";
+    dump += "R2:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R02), 4) + ",";
+    dump += "R3:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R03), 4) + ",";
+    dump += "R4:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R04), 4) + ",";
+    dump += "R5:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R05), 4) + ",";
+    dump += "R6:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_KSP), 4) + ",";
+    dump += "R7:$" + Log.toHex(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4);
     Log.getLog().info(dump);
 };
 
