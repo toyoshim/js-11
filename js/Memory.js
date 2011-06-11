@@ -17,7 +17,7 @@ function Memory () {
  * @param data data to write
  */
 Memory.prototype.writeChar = function (address, data) {
-    throw new RangeError("not implemented.")
+    throw new RangeError("Not implemented.");
 };
 
 /**
@@ -26,7 +26,7 @@ Memory.prototype.writeChar = function (address, data) {
  * @return read data
  */
 Memory.prototype.readChar = function (address) {
-    throw new RangeError("not implemented.")
+    throw new RangeError("Not implemented.");
 };
 
 /**
@@ -35,7 +35,7 @@ Memory.prototype.readChar = function (address) {
  * @param data data to write
  */
 Memory.prototype.writeShort = function (address, data) {
-    throw new RangeError("not implemented.")
+    throw new RangeError("Not implemented.");
 };
 
 /**
@@ -44,5 +44,15 @@ Memory.prototype.writeShort = function (address, data) {
  * @return read data
  */
 Memory.prototype.readShort = function (address) {
-    throw new RangeError("not implemented.")
+    throw new RangeError("Not implemented.");
+};
+
+/**
+ * Do bus specific 16-bit data transaction.
+ * @param address address to action
+ * @param data data to action
+ * @return result
+ */
+Memory.prototype.ioControl = function (address, data) {
+    throw new RangeError("Not implemented.");
 };

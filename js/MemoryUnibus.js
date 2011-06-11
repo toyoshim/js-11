@@ -18,6 +18,11 @@ function MemoryUnibus () {
 }
 
 /**
+ * Public constants.
+ */
+MemoryUnibus.IOCONTROL_RESET = 0;
+
+/**
  * Inherit Memory prototype.
  */
 MemoryUnibus.prototype = new Memory();
@@ -128,4 +133,20 @@ MemoryUnibus.prototype._read = function (address) {
     if (result < 0)
         result = this.tt.read(address);
     return result;
+};
+
+/**
+ * Do bus specific 16-bit data transaction.
+ * Unibus provides;
+ *  address 0: BUS reset
+ * @param address address to action
+ * @param data data to action
+ * @return result
+ */
+MemoryUnibus.prototype.ioControl = function (address, data) {
+    if (address == MemoryUnibus.IOCONTROL_RESET) {
+        Log.getLog().info("UNIBUS RESET.");
+        return 0;
+    }
+    throw new RangeError("Not implemented.")
 };
