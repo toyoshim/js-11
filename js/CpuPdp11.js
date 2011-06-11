@@ -18,17 +18,6 @@ function CpuPdp11 () {
     this.generalRegisterSet[1] =
             new Uint16Array(CpuPdp11.NUM_OF_GENERAL_REGISTERS);
     this.stackPointer = new Uint16Array(3);
-    this.kernelPageDescriptorRegister = new Uint16Array(8);
-    this.userPageDescriptorRegister = new Uint16Array(8);
-    this.kernelPageAddressRegister = new Uint16Array(8);
-    this.userPageAddressRegister = new Uint16Array(8);
-    // TODOs:
-    //  1. Split MMU related codes into class.
-    //  2. Update bases on MMU register access.
-    //  3. Implement MFPI.
-    //  4. Kernel maybe run!
-    this.mmuKernelBases = new Uint16Array(CpuPdp11._PAGE_SIZE);
-    this.mmuUserBases = new Uint16Array(CpuPdp11._PAGE_SIZE);
     this.init();
 }
 
@@ -95,12 +84,6 @@ CpuPdp11._ADDRESSING_PUSH = (CpuPdp11._ADDRESSING_AUTODECREMENT << 3) |
 CpuPdp11._ADDRESSING_POP = (CpuPdp11._ADDRESSING_AUTOINCREMENT << 3) |
         CpuPdp11.REGISTER_SP;
 
-CpuPdp11._MEMORY_SPACE_SIZE = 262144;
-CpuPdp11._MINIMUM_BYTES_PER_PAGE = 32;
-CpuPdp11._MINIMUM_BYTES_PER_PAGE_BITS = 5;
-CpuPdp11._MINIMUM_BYTES_PER_PAGE_MASK = 0x1f;
-CpuPdp11._PAGE_SIZE = CpuPdp11._MEMORY_SPACE_SIZE / CpuPdp11._MINIMUM_BYTES_PER_PAGE;
-
 /**
  * Initialize the processor.
  * @see Cpu
@@ -124,19 +107,8 @@ CpuPdp11.prototype.init = function () {
     this.flagV = 0;
     this.flagC = 0;
     this.priority = 0;
-    for (i = 0; i < 8; i++) {
-        this.kernelPageDescriptorRegister[i] = 0;
-        this.userPageDescriptorRegister[i] = 0;
-        this.kernelPageAddressRegister[i] = 0;
-        this.userPageAddressRegister[i] = 0;
-    }
-    this.SR0 = 0;
-    this.mmuEnabled = false;
-    for (i = 0; i < CpuPdp11._PAGE_SIZE; i++) {
-        var base = i * CpuPdp11._MINIMUM_BYTES_PER_PAGE;
-        this.mmuKernelBases[i] = base;
-        this.mmuUserBases[i] = base;
-    }
+    if (this.memory != null)
+        this.memory.init();
 };
 
 /**
@@ -560,44 +532,20 @@ CpuPdp11.prototype._loadRegister = function () {
 };
 
 /**
- * Convert 16-bit address by MMU configuration.
- * @param address virtual address
- * @return address physical address
- */
-CpuPdp11.prototype._convertAddress = function (address) {
-    if (address >= 0160000) {
-        // UNIBUS I/O device registers
-        address |= 0600000;
-    }
-    if (this.mmuEnabled) {
-        if (this.currentMode == CpuPdp11._MODE_KERNEL) {
-            return this.mmuKernelBases[
-                    address >> CpuPdp11._MINIMUM_BYTES_PER_PAGE_BITS] +
-                    (address & CpuPdp11._MINIMUM_BYTES_PER_PAGE_MASK);
-        } else if (this.currentMode == CpuPdp11._MODE_USER) {
-            return this.mmuUserBases[
-                    address >> CpuPdp11._MINIMUM_BYTES_PER_PAGE_BITS] +
-                    (address & CpuPdp11._MINIMUM_BYTES_PER_PAGE_MASK);
-        } else {
-            throw new Error("MMU: Invalid mode.");
-        }
-    }
-    return address;
-};
-
-/**
  * Load 8-bit value from memory.
  * @param address memory address
  * @return loaded value
  */
 CpuPdp11.prototype._loadChar = function (address) {
-    var physicalAddress = this._convertAddress(address);
-    if ((physicalAddress & 0400000) != 0) {
-        try{
-            return this._loadInternal(physicalAddress) & 0xff;
-        } catch (e) {
-            // Do nothing.
-        }
+    var physicalAddress = this.memory.mmu.getPhysicalAddress(address, this.currentMode);
+    if (physicalAddress == 0777776) {
+        // PS: Processor Status word Low
+        return (this.priority << 5) | (this.flagT << 4) | (this.flagN << 3) |
+                (this.flagZ << 2) | (this.flagV << 1) | this.flagC;
+    } else if (physicalAddress == 0777777) {
+        // PS: Processor Status Word High
+        return (this.currentMode << 6) | (this.previousMode << 4) |
+                (this.generalRegisterSetSelect << 3);
     }
     return this.memory.readChar(physicalAddress);
 };
@@ -608,13 +556,13 @@ CpuPdp11.prototype._loadChar = function (address) {
  * @return loaded value
  */
 CpuPdp11.prototype._loadWord = function (address) {
-    var physicalAddress = this._convertAddress(address);
-    if ((physicalAddress & 0400000) != 0) {
-        try{
-            return this._loadInternal(physicalAddress);
-        } catch (e) {
-            // Do nothing.
-        }
+    var physicalAddress = this.memory.mmu.getPhysicalAddress(address, this.currentMode);
+    if (physicalAddress == 0777776) {
+        // PS: Processor Status word
+        return (this.currentMode << 14) | (this.previousMode << 12) |
+                (this.generalRegisterSetSelect << 11) | (this.priority << 5) |
+                (this.flagT << 4) | (this.flagN << 3) | (this.flagZ << 2) |
+                (this.flagV << 1) | this.flagC;
     }
     return this.memory.readShort(physicalAddress);
 };
@@ -625,9 +573,25 @@ CpuPdp11.prototype._loadWord = function (address) {
  * @param value value to store
  */
 CpuPdp11.prototype._storeChar = function (address, value) {
-    var physicalAddress = this._convertAddress(address);
-
-    // TODO: Enable 8-bit access to internal registers.
+    var physicalAddress = this.memory.mmu.getPhysicalAddress(address, this.currentMode);
+    if (physicalAddress == 0777776) {
+        // PS: Processor Status word Low
+        this.priority = (value >> 5) & 7;
+        this.flagT = (value >> 4) & 1;
+        this.flagN = (value >> 3) & 1;
+        this.flagZ = (value >> 2) & 1;
+        this.flagV = (value >> 1) & 1;
+        this.flagC = value & 1;
+        return;
+    } else if (physicalAddress == 0777777) {
+        // PS: Processor Status word High
+        this.currentMode = (value >> 6) & 3;
+        this.previousMode = (value >> 4) & 3;
+        this._storeRegister();
+        this.generalRegisterSetSelect = (value >> 3) & 1;
+        this._loadRegister();
+        return;
+    }
     this.memory.writeChar(physicalAddress, value);
 };
 
@@ -637,267 +601,23 @@ CpuPdp11.prototype._storeChar = function (address, value) {
  * @param value value to store
  */
 CpuPdp11.prototype._storeWord = function (address, value) {
-    var physicalAddress = this._convertAddress(address);
-    if ((physicalAddress & 0400000) != 0) {
-        try {
-            this._storeInternal(physicalAddress, value);
-            return;
-        } catch (e) {
-            // Do nothing.
-        }
+    var physicalAddress = this.memory.mmu.getPhysicalAddress(address, this.currentMode);
+    if (physicalAddress == 0777776) {
+        // PS: Processor Status word
+        this.currentMode = (value >> 14) & 3;
+        this.previousMode = (value >> 12) & 3;
+        this._storeRegister();
+        this.generalRegisterSetSelect = (value >> 11) & 1;
+        this._loadRegister();
+        this.priority = (value >> 5) & 7;
+        this.flagT = (value >> 4) & 1;
+        this.flagN = (value >> 3) & 1;
+        this.flagZ = (value >> 2) & 1;
+        this.flagV = (value >> 1) & 1;
+        this.flagC = value & 1;
+        return;
     }
     this.memory.writeShort(physicalAddress, value);
-};
-
-/**
- * Load 16-bit value from internal registers.
- * @param address address register address
- * @return value loaded value
- */
-CpuPdp11.prototype._loadInternal = function (address) {
-    switch (address) {
-        case 0772300:
-        case 0772302:
-        case 0772304:
-        case 0772306:
-        case 0772310:
-        case 0772312:
-        case 0772314:
-        case 0772316:
-            // MMU Kernel Instruction / Data PDRs
-            return this.kernelPageDescriptorRegister[(address - 0772300) >> 1];
-        case 0772320:
-        case 0772322:
-        case 0772324:
-        case 0772326:
-        case 0772330:
-        case 0772332:
-        case 0772334:
-        case 0772336:
-            // MMU Kernel Data PDRs (separate I/D space is not implemented)
-            return 0;
-        case 0772340:
-        case 0772342:
-        case 0772344:
-        case 0772346:
-        case 0772350:
-        case 0772352:
-        case 0772354:
-        case 0772356:
-            // MMU Kernel Instruction / Data PARs
-            return this.kernelPageAddressRegister[(address - 0772340) >> 1];
-        case 0772360:
-        case 0772362:
-        case 0772364:
-        case 0772366:
-        case 0772370:
-        case 0772372:
-        case 0772374:
-        case 0772376:
-            // MMU Kernel Data PARs (separate I/D space is not implemented)
-            return 0;
-        case 0777572:
-            // MMU SR0
-            Log.getLog().info("MMU SR0: Read not implemented.");
-            return this.SR0;
-        case 0777574:
-            // MMU SR1
-            Log.getLog().warn("MMU SR1: Read not implemented.");
-            return 0;
-        case 0777576:
-            // MMU SR2
-            Log.getLog().warn("MMU SR2: Read not implemented.");
-            return 0;
-        case 0777600:
-        case 0777602:
-        case 0777604:
-        case 0777606:
-        case 0777610:
-        case 0777612:
-        case 0777614:
-        case 0777616:
-            // MMU User Instruction / Data PDRs
-            return this.userPageDescriptorRegister[(address - 0777600) >> 1];
-        case 0777620:
-        case 0777622:
-        case 0777624:
-        case 0777626:
-        case 0777630:
-        case 0777632:
-        case 0777634:
-        case 0777636:
-            // MMU User Data PDRs (separate I/D space is not implemented)
-            return 0;
-        case 0777640:
-        case 0777642:
-        case 0777644:
-        case 0777646:
-        case 0777650:
-        case 0777652:
-        case 0777654:
-        case 0777656:
-            // MMU User Instruction / Data PARs
-            return this.userPageAddressRegister[(address - 0777640) >> 1];
-        case 0777660:
-        case 0777662:
-        case 0777664:
-        case 0777666:
-        case 0777670:
-        case 0777672:
-        case 0777674:
-        case 0777676:
-            // MMU User Data PARs (separate I/D space is not implemented)
-            return 0;
-        case 0777776:
-            // PS: Processor Status word
-            return (this.currentMode << 14) | (this.previousMode << 12) |
-                    (this.generalRegisterSetSelect << 11) | (this.priority << 5) |
-                    (this.flagT << 4) | (this.flagN << 3) | (this.flagZ << 2) |
-                    (this.flagV << 1) | this.flagC;
-        default:
-            throw new RangeError("Unknown register.");
-    }
-};
-
-/**
- * Store 16-bit value to internal registers.
- * @param address register address
- * @param value value to store
- */
-CpuPdp11.prototype._storeInternal = function (address, value) {
-    switch (address) {
-        case 0772300:
-        case 0772302:
-        case 0772304:
-        case 0772306:
-        case 0772310:
-        case 0772312:
-        case 0772314:
-        case 0772316:
-            // MMU Kernel Instruction / Data PDRs
-            this.kernelPageDescriptorRegister[(address - 0772300) >> 1] = value;
-            Log.getLog().warn("MMU KPDR[" + ((address - 0772300) >> 1) +
-                    "]: Write " + Log.toOct(value, 7) +
-                    " (not implemented)");
-            return;
-        case 0772320:
-        case 0772322:
-        case 0772324:
-        case 0772326:
-        case 0772330:
-        case 0772332:
-        case 0772334:
-        case 0772336:
-            // MMU Kernel Data PDRs (separate I/D space is not implemented)
-            break;
-        case 0772340:
-        case 0772342:
-        case 0772344:
-        case 0772346:
-        case 0772350:
-        case 0772352:
-        case 0772354:
-        case 0772356:
-            // MMU Kernel Instruction / Data PARs
-            this.kernelPageAddressRegister[(address - 0772340) >> 1] = value;
-            Log.getLog().warn("MMU KPAR[" + ((address - 0772340) >> 1) +
-                    "]: Write " + Log.toOct(value, 7) +
-                    " (not implemented)");
-            return;
-        case 0772360:
-        case 0772362:
-        case 0772364:
-        case 0772366:
-        case 0772370:
-        case 0772372:
-        case 0772374:
-        case 0772376:
-            // MMU Kernel Data PARs (separate I/D space is not implemented)
-            break;
-        case 0777572:
-            // MMU SR0
-            this.SR0 = value;
-            this.mmuEnabled = ((value & 1) == 0) ? false : true;
-            if ((value & 0xfffe) != 0)
-                Log.getLog().warn("MMU SR0: Write " + Log.toOct(value, 7) +
-                        " (not implemented)");
-            else
-                Log.getLog().info("MMU SR0: Write " + Log.toOct(value, 7));
-            return;
-        case 0777574:
-            // MMU SR1
-            Log.getLog().warn("MMU SR1: Write " + Log.toOct(value, 7) +
-                    " (not implemented)");
-            return;
-        case 0777576:
-            // MMU SR2
-            Log.getLog().warn("MMU SR2: Write " + Log.toOct(value, 7) +
-                    " (not implemented)");
-            return;
-        case 0777600:
-        case 0777602:
-        case 0777604:
-        case 0777606:
-        case 0777610:
-        case 0777612:
-        case 0777614:
-        case 0777616:
-            // MMU User Instruction / Data PDRs
-            this.userPageDescriptorRegister[(address - 0777600) >> 1] = value;
-            Log.getLog().warn("MMU UPDR[" + ((address - 0777600) >> 1) +
-                    "]: Write " + Log.toOct(value, 7) +
-                    " (not implemented)");
-            return;
-        case 0777620:
-        case 0777622:
-        case 0777624:
-        case 0777626:
-        case 0777630:
-        case 0777632:
-        case 0777634:
-        case 0777636:
-            // MMU User Data PDRs (separate I/D space is not implemented)
-            break;
-        case 0777640:
-        case 0777642:
-        case 0777644:
-        case 0777646:
-        case 0777650:
-        case 0777652:
-        case 0777654:
-        case 0777656:
-            // MMU User Instruction / Data PARs
-            this.userPageAddressRegister[(address - 0777640) >> 1] = value;
-            Log.getLog().warn("MMU UPAR[" + ((address - 0777640) >> 1) +
-                    "]: Write " + Log.toOct(value, 7) +
-                    " (not implemented)");
-            return;
-        case 0777660:
-        case 0777662:
-        case 0777664:
-        case 0777666:
-        case 0777670:
-        case 0777672:
-        case 0777674:
-        case 0777676:
-            // MMU User Data PARs (separate I/D space is not implemented)
-            break;
-        case 0777776:
-            // PS: Processor Status word
-            this.currentMode = (value >> 14) & 3;
-            this.previousMode = (value >> 12) & 3;
-            this._storeRegister();
-            this.generalRegisterSetSelect = (value >> 11) & 1;
-            this._loadRegister();
-            this.priority = (value >> 5) & 7;
-            this.flagT = (value >> 4) & 1;
-            this.flagN = (value >> 3) & 1;
-            this.flagZ = (value >> 2) & 1;
-            this.flagV = (value >> 1) & 1;
-            this.flagC = value & 1;
-            return;
-    }
-    throw new RangeError("Unknown register.");
 };
 
 /**
@@ -1016,9 +736,6 @@ CpuPdp11.prototype._loadWordByMode = function (modeAndR) {
         default:
             throw new RangeError("Invalid indexing mode: wl," + mode);
     }
-    if (modeAndR == CpuPdp11._ADDRESSING_POP)
-        Log.getLog().info("POP (" + Log.toOct(this.registerSet[r] - 2, 7) +
-                ") -> " + Log.toOct(result, 7));
     return result;
 };
 
@@ -1062,9 +779,6 @@ CpuPdp11.prototype._storeCharByMode = function (modeAndR, value) {
 CpuPdp11.prototype._storeWordByMode = function (modeAndR, value) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
-    if (modeAndR == CpuPdp11._ADDRESSING_PUSH)
-        Log.getLog().info("PUSH " + Log.toOct(value, 7) + " -> (" +
-                Log.toOct(this.registerSet[r] - 2, 7) + ")");
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             this.registerSet[r] = value;

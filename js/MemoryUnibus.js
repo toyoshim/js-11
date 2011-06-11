@@ -7,14 +7,17 @@
  *
  * This prototype provides a UNIBUS memory system.
  * @author Takashi Toyoshima <toyoshim@gmail.com>
+ * @see Memory
  */
 function MemoryUnibus () {
     this.logging = false;
     this.rk = new DeviceRk(this);
     this.tt = new DeviceTt(this);
+    this.mmu = new DeviceMmu(this);
     this.ram = new Uint16Array(65536);  // 128KB
     for (var i = 0; i < 65536; i++)
         this.ram[i] = 0;
+    this.init();
 }
 
 /**
@@ -27,6 +30,14 @@ MemoryUnibus.IOCONTROL_RESET = 0;
  */
 MemoryUnibus.prototype = new Memory();
 MemoryUnibus.prototype.constructor = MemoryUnibus;
+
+/**
+ * Initialize the processor.
+ * @see CpuPdp11
+ */
+MemoryUnibus.prototype.init = function () {
+    this.mmu.init();
+};
 
 /**
  * Write 8-bit data to addressed memory.
@@ -114,6 +125,7 @@ MemoryUnibus.prototype._write = function (address, data) {
         this.ram[address >> 1] = data;
         return true;
     }
+    if (this.mmu.write(address, data)) return true;
     if (this.rk.write(address, data)) return true;
     if (this.tt.write(address, data)) return true;
     return false;
@@ -127,7 +139,7 @@ MemoryUnibus.prototype._write = function (address, data) {
 MemoryUnibus.prototype._read = function (address) {
     if (address < 0x20000)
         return this.ram[address >> 1];
-    var result = -1;
+    var result = this.mmu.read(address);
     if (result < 0)
         result = this.rk.read(address);
     if (result < 0)
