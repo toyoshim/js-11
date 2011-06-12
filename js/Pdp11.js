@@ -111,24 +111,24 @@ Pdp11.prototype.mountRk0 = function (uri) {
  */
 Pdp11.prototype.dump = function () {
     var dump = "";
-    dump += "PC:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4) + ",";
-    dump += "R0:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R00), 4) + ",";
-    dump += "R1:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R01), 4) + ",";
-    dump += "R2:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R02), 4) + ",";
-    dump += "R3:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R03), 4) + ",";
-    dump += "R4:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R04), 4) + ",";
-    dump += "R5:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R05), 4) + ",";
-    dump += "R6:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_KSP), 4) + ",";
-    dump += "R7:$" + Log.toHex(
-            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4);
+    dump += "PC:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 7) + ",";
+    dump += "R0:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R00), 7) + ",";
+    dump += "R1:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R01), 7) + ",";
+    dump += "R2:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R02), 7) + ",";
+    dump += "R3:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R03), 7) + ",";
+    dump += "R4:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R04), 7) + ",";
+    dump += "R5:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_R05), 7) + ",";
+    dump += "R6:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_KSP), 7) + ",";
+    dump += "R7:" + Log.toOct(
+            this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 7);
     Log.getLog().info(dump);
 };
 
