@@ -417,6 +417,10 @@ CpuPdp11.prototype.runStep = function () {
                 if ((this.flagN ^ this.flagV) == 1)
                     this._doBranch(instruction & 0000377);
                 return;
+            case 0003000:  // BGT
+                if ((this.flagZ | this.flagN | this.flagV) == 0)
+                    this._doBranch(instruction & 0000377);
+                return;
             case 0100000:  // BPL
                 if (this.flagN == 0)
                     this._doBranch(instruction & 0000377);
