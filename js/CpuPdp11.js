@@ -531,6 +531,16 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagC = 0;
                 this._writeCharByMode(instruction & 0000077, 0);
                 return;
+            case 0105200:  // INCB
+                this._operationCharByMode(instruction & 0000077, 0,
+                        function (dst, src) {
+                            var result = (dst + 1) & 0xff;
+                            this.flagN = (result >> 7) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = this.flagZ;
+                            return result;
+                        });
+                return;
             case 0105700:  // TSTB
                 var test = this._readCharByMode(instruction & 0000077);
                 this.flagN = (test >> 7) & 1;
