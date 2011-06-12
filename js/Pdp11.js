@@ -72,7 +72,7 @@ Pdp11.prototype.run = function () {
     this.stop = false;
     for (var i = 0; i < 10000; i++) {
         if (this.logging)
-            this._dump();
+            this.dump();
         if (this.stop)
             break;
         this.cpu.runStep();
@@ -109,7 +109,7 @@ Pdp11.prototype.mountRk0 = function (uri) {
 /**
  * Dump register information.
  */
-Pdp11.prototype._dump = function () {
+Pdp11.prototype.dump = function () {
     var dump = "";
     dump += "PC:$" + Log.toHex(
             this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 4) + ",";

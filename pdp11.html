@@ -44,7 +44,7 @@
             var level = [Log.INFO, Log.WARN, Log.ERROR, Log.FATAL];
             Log.getLog().setLevel(level[document.control.level.selectedIndex]);
         };
-        pdp11_loop = function() {
+        pdp11_loop = function () {
             try {
                 pdp11.run();
             } catch (e) {
@@ -52,10 +52,10 @@
                 Log.getLog().fatal(e);
             }
         };
-        pdp11_clear = function() {
+        pdp11_clear = function () {
             Log.getLog().clear();
         };
-        pdp11_mdump = function() {
+        pdp11_mdump = function () {
             if (document.control.mdump.value) {
                 pdp11.memory.logging = true;
                 document.control.level.selectedIndex = 0;
@@ -64,7 +64,7 @@
                 pdp11.memory.logging = false;
             }
         };
-        pdp11_rdump = function() {
+        pdp11_rdump = function () {
             if (document.control.rdump.value) {
                 pdp11.logging = true;
                 document.control.level.selectedIndex = 0;
@@ -73,7 +73,12 @@
                 pdp11.logging = false;
             }
         };
-        pdp11_cons = function() {
+        pdp11_rdump_now = function () {
+            Log.getLog().setLevel(Log.INFO);
+            pdp11.dump();
+            pdp11_select();
+        };
+        pdp11_cons = function () {
             pdp11.memory.tt.cons = document.control.cons.value;
         };
     </script>
@@ -97,6 +102,7 @@
             <option selected="selected">FATAL</option></select>
         REG DUMP
             <input type="checkbox" name="rdump" onchange="pdp11_rdump();">
+            <input type="button" value="NOW" onclick="pdp11_rdump_now();">
         MEM DUMP
             <input type="checkbox" name="mdump" onchange="pdp11_mdump();">
             <input type="button" value="CLEAR" onclick="pdp11_clear();"><br>
