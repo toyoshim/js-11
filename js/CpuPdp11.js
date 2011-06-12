@@ -264,8 +264,27 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagV = 0;
                 return;
             case 0140000:  // BICB
+                var src = this._readCharByMode((instruction & 0007700) >> 6);
+                this._operationWordByMode(instruction & 0000077, src,
+                        function (dst, src) {
+                            var result = ~src & dst;
+                            this.flagN = (result >> 7) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = 0;
+                            return result;
+                        });
+                return;
             case 0150000:  // BISB
-                break;
+                var src = this._readCharByMode((instruction & 0007700) >> 6);
+                this._operationWordByMode(instruction & 0000077, src,
+                        function (dst, src) {
+                            var result = src ^ dst;
+                            this.flagN = (result >> 7) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = 0;
+                            return result;
+                        });
+                return;
             case 0160000:  // SUB
                 var src = this._readShortByMode((instruction & 0007700) >> 6);
                 this._operationWordByMode(instruction & 0000077, src,
