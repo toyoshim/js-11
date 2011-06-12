@@ -157,6 +157,16 @@ Log.prototype.prettyPrint = function (message) {
 };
 
 /**
+ * Clear all logs.
+ */
+Log.prototype.clear = function () {
+    if (this.framePre == undefined)
+        return;
+    while (this.framePre.firstChild)
+        this.framePre.removeChild(this.framePre.firstChild);
+};
+
+/**
  * Log fatal message.
  * @param message fatal message
  */

@@ -62,17 +62,28 @@ function Pdp11 () {
     this.cpu = new CpuPdp11();
     this.cpu.setMemory(this.memory);
     this.logging = false;
+    this.stop = false;
 }
 
 /**
  * Run emulation.
  */
 Pdp11.prototype.run = function () {
+    this.stop = false;
     for (var i = 0; i < 10000; i++) {
         if (this.logging)
             this._dump();
+        if (this.stop)
+            break;
         this.cpu.runStep();
     }
+};
+
+/**
+ * Stop emulation.
+ */
+Pdp11.prototype.stop = function () {
+    this.stop = true;
 };
 
 /**

@@ -28,23 +28,16 @@
             pdp11.cpu.init();
             pdp11.bootRk0();
             pdp11.memory.tt.set(new String("unix\n"));
+            clearInterval(tid);
             tid = setInterval(pdp11_loop, 10);
         };
+        pdp11_stop = function () {
+            clearInterval(tid);
+            pdp11.stop();
+        };
         pdp11_select = function () {
-            switch (document.log.level.selectedIndex) {
-                case 0:
-                    Log.getLog().setLevel(Log.INFO);
-                    break;
-                case 1:
-                    Log.getLog().setLevel(Log.WARN);
-                    break;
-                case 2:
-                    Log.getLog().setLevel(Log.ERROR);
-                    break;
-                case 3:
-                    Log.getLog().setLevel(Log.FATAL);
-                    break;
-            }
+            var level = [Log.INFO, Log.WARN, Log.ERROR, Log.FATAL];
+            Log.getLog().setLevel(level[document.control.level.selectedIndex]);
         };
         pdp11_loop = function() {
             try {
@@ -54,25 +47,55 @@
                 Log.getLog().fatal(e);
             }
         };
+        pdp11_clear = function() {
+            Log.getLog().clear();
+        };
+        pdp11_mdump = function() {
+            if (document.control.dump.value)
+                pdp11.memory.logging = true;
+            else
+                pdp11.memory.logging = false;
+        };
+        pdp11_rdump = function() {
+            if (document.control.dump.value)
+                pdp11.logging = true;
+            else
+                pdp11.logging = false;
+        };
+        pdp11_cons = function() {
+            pdp11.memory.tt.cons = document.control.cons.value;
+        };
     </script>
-    <pre id="term" style="background-color:black; color: green; display: inline-block;"></pre>
-    <pre><form name="log"><input type="button" value="reset" onclick="pdp11_reset();"> LOG LEVEL:<select name="level" onchange="pdp11_select();">
-        <option>INFO</option>
-        <option>WARN</option>
-        <option>ERROR</option>
-        <option selected="selected">FATAL</option></select></form></pre>
+    <pre id="term"
+         style="background-color: black;
+                color: green;
+                display: inline-block;"></pre>
+    <div><form name="control">
+        [PDP-11]
+            <input type="button" value="RESET" onclick="pdp11_reset();">
+            <input type="button" value="STOP" onclick="pdp11_stop();"><br>
+        [LOG]
+        LEVEL
+            <select name="level" onchange="pdp11_select();">
+            <option>INFO</option>
+            <option>WARN</option>
+            <option>ERROR</option>
+            <option selected="selected">FATAL</option></select>
+        REG DUMP
+            <input type="checkbox" name="rdump" onchange="pdp11_rdump();">
+        MEM DUMP
+            <input type="checkbox" name="mdump" onchange="pdp11_mdump();">
+            <input type="button" value="CLEAR" onclick="pdp11_clear();"><br>
+        [CONSOLE]
+            <input type="checkbox" name="cons" checked="true"
+                   onchange="pdp11_cons();">
+    </form></div>
     <pre>==== DEBUG LOG ====</pre>
     <pre id="log"></pre>
     <script>
         Log.setLog(new Log("log", true));
         Log.getLog().setLevel(Log.ERROR);
         var pdp11 = new Pdp11();
-/*
-        Log.setLog(new Log("log", false));
-        Log.getLog().setLevel(Log.INFO);
-        pdp11.logging = true;
-        pdp11.memory.logging = true;
-*/
         var term = new Term("term", 80, 25);
         term.appendString("v6/js-11 booting from rk0 ...\n");
         pdp11.memory.tt.setCallback(function (c) { term.appendCharacter(c); });

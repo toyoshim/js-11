@@ -12,6 +12,7 @@ function DeviceTt (bus) {
     this.bus = bus;
     this.inputs = new String();
     this.callback = null;
+    this.cons = 1;
 }
 
 /**
@@ -60,7 +61,8 @@ DeviceTt.prototype.read = function (address) {
             result = 0x0000;
             if (this.inputs.length != 0)
                 result |= 0x0080;
-            Log.getLog().warn("TT RCSR => " + Log.toHex(result, 4) + " (Not implemented.)");
+            Log.getLog().warn("TT RCSR => " + Log.toHex(result, 4) +
+                    " (Not implemented.)");
             break;
         case DeviceTt.ADDRESS_RBUF:  // TT Receiver Data Buffer Register
             result = 0xffff;
@@ -75,8 +77,9 @@ DeviceTt.prototype.read = function (address) {
             Log.getLog().warn("TT XCSR => 0x0080 (Not implemented.)");
             break;
         case DeviceTt.ADDRESS_CONS:  // Console Switch Register
-            result = 0xffff;
-            Log.getLog().warn("CONS => 0xffff (Not implemented.)");
+            result = this.cons;
+            Log.getLog().warn("CONS => 0x" + Log.toHex(result, 4) +
+                    " (Not implemented.)");
             break;
         default:
             break;
