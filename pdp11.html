@@ -35,6 +35,11 @@
             clearInterval(tid);
             pdp11.stop();
         };
+        pdp11_log = function () {
+            pdp11_clear();
+            Log.setLog(new Log("log", document.control.reversed.value));
+            pdp11_select();
+        };
         pdp11_select = function () {
             var level = [Log.INFO, Log.WARN, Log.ERROR, Log.FATAL];
             Log.getLog().setLevel(level[document.control.level.selectedIndex]);
@@ -51,16 +56,22 @@
             Log.getLog().clear();
         };
         pdp11_mdump = function() {
-            if (document.control.mdump.value)
+            if (document.control.mdump.value) {
                 pdp11.memory.logging = true;
-            else
+                document.control.level.selectedIndex = 0;
+                pdp11_select();
+            } else {
                 pdp11.memory.logging = false;
+            }
         };
         pdp11_rdump = function() {
-            if (document.control.rdump.value)
+            if (document.control.rdump.value) {
                 pdp11.logging = true;
-            else
+                document.control.level.selectedIndex = 0;
+                pdp11_select();
+            } else {
                 pdp11.logging = false;
+            }
         };
         pdp11_cons = function() {
             pdp11.memory.tt.cons = document.control.cons.value;
@@ -75,6 +86,9 @@
             <input type="button" value="RESET" onclick="pdp11_reset();">
             <input type="button" value="STOP" onclick="pdp11_stop();"><br>
         [LOG]
+        REVERSED
+            <input type="checkbox" name="reversed" checked="true"
+                   onchange="pdp11_log();">
         LEVEL
             <select name="level" onchange="pdp11_select();">
             <option>INFO</option>
