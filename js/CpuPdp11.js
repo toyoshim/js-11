@@ -265,7 +265,7 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0140000:  // BICB
                 var src = this._readCharByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
+                this._operationCharByMode(instruction & 0000077, src,
                         function (dst, src) {
                             var result = ~src & dst;
                             this.flagN = (result >> 7) & 1;
@@ -276,7 +276,7 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0150000:  // BISB
                 var src = this._readCharByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
+                this._operationCharByMode(instruction & 0000077, src,
                         function (dst, src) {
                             var result = src ^ dst;
                             this.flagN = (result >> 7) & 1;
@@ -1008,8 +1008,59 @@ CpuPdp11.prototype._writeShortByMode = function (modeAndR, value) {
                     (this._fetchWord() + this.registerSet[r]) & 0xffff, value,
                     this.currentMode);
             break;
+        case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
+            var address = this._readShort(
+                    (this._fetchWord() + this.registerSet[r]) & 0xffff,
+                    this.currentMode);
+            this._writeShort(address, value, this.currentMode);
+            break;
         default:
             throw new RangeError("Invalid indexing mode: ws," + mode);
+    }
+};
+
+/**
+ * Operate 8-bit value by specified addressing mode and register.
+ * @param modeAndR addressing mode and register number
+ * @param operation operation to do
+ */
+CpuPdp11.prototype._operationCharByMode = function (modeAndR, src, operation) {
+    var mode = modeAndR >> 3;
+    var r = modeAndR & 7;
+    switch (mode) {
+        case CpuPdp11._ADDRESSING_REGISTER:
+            this.registerSet[r] = operation(this.registerSet[r], src);
+            break;
+        case CpuPdp11._ADDRESSING_REGISTER_DEFERRED:
+            this._writeChar(this.registerSet[r],
+                    operation(this._readChar(this.registerSet[r],
+                            this.currentMode), src), this.currentMode);
+            break;
+        case CpuPdp11._ADDRESSING_AUTOINCREMENT:
+            this._writeChar(this.registerSet[r],
+                    operation(this._readChar(this.registerSet[r],
+                            this.currentMode), src), this.currentMode);
+            if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
+                this.registerSet[r] += 2;
+            else
+                this.registerSet[r] += 1;
+            break;
+        case CpuPdp11._ADDRESSING_AUTODECREMENT:
+            if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
+                this.registerSet[r] -= 2;
+            else
+                this.registerSet[r] -= 1;
+            this._writeChar(this.registerSet[r],
+                    operation(this._readChar(this.registerSet[r],
+                            this.currentMode), src), this.currentMode);
+            break;
+        case CpuPdp11._ADDRESSING_INDEX:
+            var address = (this._fetchWord() + this.registerSet[r]) & 0xffff;
+            this._writeChar(address, operation(this._readChar(address,
+                    this.currentMode), src), this.currentMode);
+            break;
+        default:
+            throw new RangeError("Invalid indexing mode: bo," + mode);
     }
 };
 
@@ -1048,6 +1099,6 @@ CpuPdp11.prototype._operationWordByMode = function (modeAndR, src, operation) {
                     this.currentMode), src), this.currentMode);
             break;
         default:
-            throw new RangeError("Invalid indexing mode: ow," + mode);
+            throw new RangeError("Invalid indexing mode: wo," + mode);
     }
 };
