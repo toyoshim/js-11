@@ -524,6 +524,17 @@ CpuPdp11.prototype.runStep = function () {
                 var address = this._addressByMode(instruction & 0000077);
                 this._writeShort(address, data, this.previousMode);
                 return;
+            case 0006700:  // SXT
+                this.flagZ = this.flagN;
+                this.flagV = 0;
+                this._operationWordByMode(instruction & 0000077, this.flagN,
+                        function (dst, flagN) {
+                            if (flagN == 0)
+                                return dst & 0x00ff;
+                            else
+                                return dst | 0xff00;
+                        });
+                return;
             case 0105000:  // CLRB
                 this.flagN = 0;
                 this.flagZ = 1;
