@@ -798,6 +798,11 @@ CpuPdp11.prototype._indexByMode = function (modeAndR) {
         case CpuPdp11._ADDRESSING_INDEX:
             result = (this._fetchWord() + this.registerSet[r]) & 0xffff;
             break;
+        case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
+            result = this._readShort(
+                    (this._fetchWord() + this.registerSet[r]) & 0xffff,
+                    this.currentMode);
+            break;
         default:
             throw new RangeError("Invalid indexing mode: " + mode);
     }
