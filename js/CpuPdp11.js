@@ -112,6 +112,7 @@ CpuPdp11.prototype.init = function () {
     if (this.memory != null)
         this.memory.init();
     this.currentPc = 0;
+    this.wait = false;
 };
 
 /**
@@ -175,6 +176,8 @@ CpuPdp11.prototype.writeRegister = function (index, value) {
  * @see Cpu
  */
 CpuPdp11.prototype.runStep = function () {
+    if (this.wait)
+        return;
     this.currentPc = this.registerSet[CpuPdp11.REGISTER_PC];
     var instruction = this._fetchWord();
     try {
@@ -578,6 +581,10 @@ CpuPdp11.prototype.runStep = function () {
         switch (instruction) {
             case 0000000:  // HALT
                 Log.getLog().info("HALT");
+                return;
+            case 0000001:  // WAIT
+                Log.getLog().info("WAIT");
+                this.wait = true;
                 return;
             case 0000005:  // RESET
                 this.memory.ioControl(MemoryUnibus.IOCONTROL_RESET, 0);
