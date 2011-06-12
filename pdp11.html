@@ -51,13 +51,13 @@
             Log.getLog().clear();
         };
         pdp11_mdump = function() {
-            if (document.control.dump.value)
+            if (document.control.mdump.value)
                 pdp11.memory.logging = true;
             else
                 pdp11.memory.logging = false;
         };
         pdp11_rdump = function() {
-            if (document.control.dump.value)
+            if (document.control.rdump.value)
                 pdp11.logging = true;
             else
                 pdp11.logging = false;
