@@ -694,7 +694,7 @@ CpuPdp11.prototype._readChar = function (address, mode) {
         // Bus timeout
         Log.getLog().info("BUS TIMEOUT at PC " +
                 Log.toOct(this.currentPc, 7) + ": " + e.message);
-        if (physicalAddress < 0700000)
+        if (physicalAddress <= 0760000)
             e.busTimeout = true;
         throw e;
     }
@@ -716,7 +716,7 @@ CpuPdp11.prototype._readShort = function (address, mode) {
         // Bus timeout
         Log.getLog().info("BUS TIMEOUT at PC " +
                 Log.toOct(this.currentPc, 7) + ": " + e.message);
-        if (physicalAddress < 0700000)
+        if (physicalAddress <= 0760000)
             e.busTimeout = true;
         throw e;
     }

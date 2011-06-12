@@ -15,8 +15,8 @@ function MemoryUnibus () {
     this.tt = new DeviceTt(this);
     this.kw = new DeviceKw(this);
     this.mmu = new DeviceMmu(this);
-    this.ram = new Uint16Array(65536);  // 128KB
-    for (var i = 0; i < 65536; i++)
+    this.ram = new Uint16Array(MemoryUnibus.MEMORY_SIZE >> 1);
+    for (var i = 0; i < (MemoryUnibus.MEMORY_SIZE >> 1); i++)
         this.ram[i] = 0;
     this.init();
 }
@@ -25,6 +25,7 @@ function MemoryUnibus () {
  * Public constants.
  */
 MemoryUnibus.IOCONTROL_RESET = 0;
+MemoryUnibus.MEMORY_SIZE = 0x3e000;  // ~256KB
 
 /**
  * Inherit Memory prototype.
@@ -124,7 +125,7 @@ MemoryUnibus.prototype.readShort = function (address) {
 MemoryUnibus.prototype._write = function (address, data) {
     if (data < 0)
         Log.getLog().fatal("Internal error: write negative value.");
-    if (address < 0x20000) {
+    if (address < MemoryUnibus.MEMORY_SIZE) {
         this.ram[address >> 1] = data;
         return true;
     }
@@ -141,7 +142,7 @@ MemoryUnibus.prototype._write = function (address, data) {
  * @return read data (-1: failure)
  */
 MemoryUnibus.prototype._read = function (address) {
-    if (address < 0x20000)
+    if (address < MemoryUnibus.MEMORY_SIZE)
         return this.ram[address >> 1];
     var result = this.mmu.read(address);
     if (result < 0)
