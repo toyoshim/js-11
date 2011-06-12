@@ -522,10 +522,10 @@ CpuPdp11.prototype.runStep = function () {
         switch (instruction & 0177770) {
             case 0000200:  // RTS
                 var r = instruction & 0000007;
-                this.registerSet[r] =
-                        this._readShortByMode(CpuPdp11._ADDRESSING_POP);
                 this.registerSet[CpuPdp11.REGISTER_PC] =
                         this.registerSet[r];
+                this.registerSet[r] =
+                        this._readShortByMode(CpuPdp11._ADDRESSING_POP);
                 return;
             default:
                 break;
@@ -836,7 +836,10 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
             result = this._readChar(this.registerSet[r], this.currentMode);
-            this.registerSet[r] += 1;
+            if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
+                this.registerSet[r] += 2;
+            else
+                this.registerSet[r] += 1;
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
             result = this._readShort(this.registerSet[r], this.currentMode);
@@ -844,7 +847,10 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
             result = this._readChar(result, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
-            this.registerSet[r] -= 1;
+            if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
+                this.registerSet[r] -= 2;
+            else
+                this.registerSet[r] -= 1;
             result = this._readChar(this.registerSet[r], this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_INDEX:
@@ -927,15 +933,22 @@ CpuPdp11.prototype._writeCharByMode = function (modeAndR, value) {
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
             this._writeChar(this.registerSet[r], value, this.currentMode);
-            this.registerSet[r] += 1;
+            if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
+                this.registerSet[r] += 2;
+            else
+                this.registerSet[r] += 1;
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
-            this.registerSet[r] -= 1;
+            if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
+                this.registerSet[r] -= 2;
+            else
+                this.registerSet[r] -= 1;
             this._writeChar(this.registerSet[r], value, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_INDEX:
             this._writeChar(
                     (this._fetchWord() + this.registerSet[r]) & 0xffff,
+                    value,
                     this.currentMode);
             break;
         default:

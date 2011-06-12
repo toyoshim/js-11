@@ -66,7 +66,7 @@ DeviceMmu.prototype.getPhysicalAddress = function (address, mode) {
         } else if (mode == DeviceMmu.MODE_DIRECT) {
             return address;
         } else {
-            throw new Error("MMU: Invalid mode.");
+            throw new Error("MMU: Invalid mode '" + mode + "'.");
         }
     } else if (address >= 0160000) {
         address |= 0600000;
