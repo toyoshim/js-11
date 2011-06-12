@@ -27,6 +27,9 @@ DeviceKw.prototype.write = function (address, data) {
     var result = true;
     switch (address) {
         case DeviceKw.ADDRESS_LKS:
+            Log.getLog().warn("KW LKS <= 0x" + Log.toHex(data, 4) +
+                " (Not implemented.)");
+            break;
         default:
             result = false;
     }
