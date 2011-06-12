@@ -205,7 +205,7 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0040000:  // BIC
                 var src = this._readShortByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
+                this._operationShortByMode(instruction & 0000077, src,
                         function (dst, src) {
                             var result = ~src & dst;
                             this.flagN = (result >> 15) & 1;
@@ -216,7 +216,7 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0050000:  // BIS
                 var src = this._readShortByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
+                this._operationShortByMode(instruction & 0000077, src,
                         function (dst, src) {
                             var result = src ^ dst;
                             this.flagN = (result >> 15) & 1;
@@ -227,7 +227,7 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0060000:  // ADD
                 var src = this._readShortByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
+                this._operationShortByMode(instruction & 0000077, src,
                         function (dst, src) {
                             var result = src + dst;
                             this.flagN = (result >> 15) & 1;
@@ -287,7 +287,7 @@ CpuPdp11.prototype.runStep = function () {
                 return;
             case 0160000:  // SUB
                 var src = this._readShortByMode((instruction & 0007700) >> 6);
-                this._operationWordByMode(instruction & 0000077, src,
+                this._operationShortByMode(instruction & 0000077, src,
                         function (dst, src) {
                             var result = dst - src;
                             this.flagN = (result >> 15) & 1;
@@ -450,7 +450,7 @@ CpuPdp11.prototype.runStep = function () {
                 this.registerSet[CpuPdp11.REGISTER_PC] = pc;
                 return;
             case 0000300:  // SWAB
-                this._operationWordByMode(instruction & 0000077, 0,
+                this._operationShortByMode(instruction & 0000077, 0,
                         function (dst, src) {
                             var high = dst & 0xff;
                             var low = (dst >> 8) & 0xff;
@@ -470,7 +470,7 @@ CpuPdp11.prototype.runStep = function () {
                 this._writeShortByMode(instruction & 0000077, 0);
                 return;
             case 0005200:  // INC
-                this._operationWordByMode(instruction & 0000077, 0,
+                this._operationShortByMode(instruction & 0000077, 0,
                         function (dst, src) {
                             var result = (dst + 1) & 0xffff;
                             this.flagN = (result >> 15) & 1;
@@ -487,7 +487,7 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagC = 0;
                 return;
             case 0006300:  // ASL
-                this._operationWordByMode(instruction & 0000077, 0,
+                this._operationShortByMode(instruction & 0000077, 0,
                         function (dst, src) {
                             this.flagC = (dst >> 15) & 1;
                             var result = (dst << 1) & 0xffff;
@@ -527,7 +527,7 @@ CpuPdp11.prototype.runStep = function () {
             case 0006700:  // SXT
                 this.flagZ = this.flagN;
                 this.flagV = 0;
-                this._operationWordByMode(instruction & 0000077, this.flagN,
+                this._operationShortByMode(instruction & 0000077, this.flagN,
                         function (dst, flagN) {
                             if (flagN == 0)
                                 return dst & 0x00ff;
@@ -1100,7 +1100,7 @@ CpuPdp11.prototype._operationCharByMode = function (modeAndR, src, operation) {
  * @param modeAndR addressing mode and register number
  * @param operation operation to do
  */
-CpuPdp11.prototype._operationWordByMode = function (modeAndR, src, operation) {
+CpuPdp11.prototype._operationShortByMode = function (modeAndR, src, operation) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
     switch (mode) {
