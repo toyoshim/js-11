@@ -64,6 +64,9 @@ CpuPdp11.REGISTER_FILE_PC = 15;
 CpuPdp11.VECTOR_BUS_TIMEOUT = 0004;
 CpuPdp11.VECTOR_LINE_CLOCK = 0100;
 
+CpuPdp11.PRIORITY_BUS_TIMEOUT = 7;
+CpuPdp11.PRIORITY_LINE_CLOCK = 6;
+
 /**
  * Private constants.
  */
@@ -610,7 +613,7 @@ CpuPdp11.prototype.runStep = function () {
         }
     } catch (e) {
         if (e.busTimeout) {
-            this._doTrap(CpuPdp11.VECTOR_BUS_TIMEOUT);
+            this._doTrap(CpuPdp11.VECTOR_BUS_TIMEOUT, CpuPdp11.PRIORITY_BUS_TIMEOUT);
         } else {
             if (instruction == undefined)
                 instruction = 0;
@@ -627,7 +630,8 @@ CpuPdp11.prototype.runStep = function () {
 CpuPdp11.prototype.lineClock = function () {
     if (this.memory.kw.requestInterrupt()) {
         Log.getLog().info("Line clock interrupt.");
-        this._doTrap(CpuPdp11.VECTOR_LINE_CLOCK);
+        this._doTrap(CpuPdp11.VECTOR_LINE_CLOCK, CpuPdp11.PRIORITY_LINE_CLOCK);
+        this.wait = false;
     }
 };
 
@@ -647,7 +651,7 @@ CpuPdp11.prototype._doBranch = function (offset) {
  * Execute trap operation.
  * @param vector trap vector address
  */
-CpuPdp11.prototype._doTrap = function (vector) {
+CpuPdp11.prototype._doTrap = function (vector, priority) {
     // TODO: Check priority and double bus error.
     var previousPs = this._readPs();
     var previousPc = this.currentPc;
@@ -659,6 +663,7 @@ CpuPdp11.prototype._doTrap = function (vector) {
     Log.getLog().info("  PC = " + Log.toOct(previousPc, 7) +
             " -> " + Log.toOct(trapPc, 7));
     this._writePs(trapPs);
+    this.priority = priority;  // Overwrite device priority
     this.registerSet[CpuPdp11.REGISTER_PC] = trapPc;
     this._writeShortByMode(CpuPdp11._ADDRESSING_PUSH, previousPs);
     this._writeShortByMode(CpuPdp11._ADDRESSING_PUSH, previousPc);
