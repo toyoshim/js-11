@@ -490,6 +490,8 @@ CpuPdp11.prototype.runStep = function () {
                             return result;
                         });
                 return;
+            case 0005300:  // DEC
+                break;
             case 0005700:  // TST
                 var test = this._readShortByMode(instruction & 0000077);
                 this.flagN = (test >> 15) & 1;
@@ -560,6 +562,16 @@ CpuPdp11.prototype.runStep = function () {
                             this.flagN = (result >> 7) & 1;
                             this.flagZ = (result == 0) ? 1 : 0;
                             this.flagV = this.flagZ;
+                            return result;
+                        });
+                return;
+            case 0105300:  // DECB
+                this._operationCharByMode(instruction & 0000077, 0,
+                        function (dst, src) {
+                            var result = (dst - 1) & 0xff;
+                            this.flagN = (result >> 7) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = (result = 0x80) ? 1 : 0;
                             return result;
                         });
                 return;
