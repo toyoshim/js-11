@@ -31,6 +31,10 @@
             clearInterval(tid);
             tid = setInterval(pdp11_loop, 10);
         };
+        pdp11_start = function() {
+            clearInterval(tid);
+            tid = setInterval(pdp11_loop, 10);
+        };
         pdp11_stop = function () {
             clearInterval(tid);
             pdp11.stop();
@@ -89,6 +93,7 @@
     <div><form name="control">
         [PDP-11]
             <input type="button" value="RESET" onclick="pdp11_reset();">
+            <input type="button" value="START" onclick="pdp11_start();">
             <input type="button" value="STOP" onclick="pdp11_stop();"><br>
         [LOG]
         REVERSED
