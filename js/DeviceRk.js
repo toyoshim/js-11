@@ -60,7 +60,7 @@ DeviceRk.prototype.write = function (address, data) {
                     var count = 0x10000 - this.RKWC;
                     var drive = this._getDrive(this.RKDA);
                     var sector = this._getSector(this.RKDA);
-                    Log.getLog().info("RK READ:");
+                    Log.getLog().info("RK READ: 0x" + Log.toHex(data, 4));
                     Log.getLog().info("  Word Count: " + count);
                     Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
                     Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));

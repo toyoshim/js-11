@@ -603,7 +603,7 @@ CpuPdp11.prototype.runStep = function () {
                 Log.getLog().info("HALT");
                 return;
             case 0000001:  // WAIT
-                Log.getLog().info("WAIT");
+                Log.getLog().info("WAIT at PC " + Log.toOct(this.currentPc, 7));
                 this.wait = true;
                 return;
             case 0000005:  // RESET
