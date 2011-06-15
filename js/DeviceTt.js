@@ -25,6 +25,12 @@ DeviceTt.ADDRESS_XBUF = 0777566;
 DeviceTt.ADDRESS_CONS = 0777570;
 
 /**
+ * Initialize TT device.
+ */
+DeviceTt.prototype.init = function () {
+};
+
+/**
  * Write 16-bit data to addressed memory.
  * @param address memory address to write
  * @param data data to write

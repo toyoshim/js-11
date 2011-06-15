@@ -16,8 +16,6 @@ function MemoryUnibus () {
     this.kw = new DeviceKw(this);
     this.mmu = new DeviceMmu(this);
     this.ram = new Uint16Array(MemoryUnibus.MEMORY_SIZE >> 1);
-    for (var i = 0; i < (MemoryUnibus.MEMORY_SIZE >> 1); i++)
-        this.ram[i] = 0;
     this.init();
 }
 
@@ -34,11 +32,16 @@ MemoryUnibus.prototype = new Memory();
 MemoryUnibus.prototype.constructor = MemoryUnibus;
 
 /**
- * Initialize the processor.
+ * Initialize I/O system.
  * @see CpuPdp11
  */
 MemoryUnibus.prototype.init = function () {
+    this.rk.init();
+    this.tt.init();
+    this.kw.init();
     this.mmu.init();
+    for (var i = 0; i < (MemoryUnibus.MEMORY_SIZE >> 1); i++)
+        this.ram[i] = 0;
 };
 
 /**

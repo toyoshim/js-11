@@ -62,6 +62,7 @@ CpuPdp11.REGISTER_FILE_KSP = 14;
 CpuPdp11.REGISTER_FILE_PC = 15;
 
 CpuPdp11.VECTOR_BUS_TIMEOUT = 0004;
+CpuPdp11.VECTOR_LINE_CLOCK = 0100;
 
 /**
  * Private constants.
@@ -613,6 +614,16 @@ CpuPdp11.prototype.runStep = function () {
                     Log.toOct(instruction, 7) + " at PC " +
                     Log.toOct(this.currentPc, 7));
         }
+    }
+};
+
+/**
+ * Execute line clock handling.
+ */
+CpuPdp11.prototype.lineClock = function () {
+    if (this.memory.kw.requestInterrupt()) {
+        Log.getLog().info("Line clock interrupt.");
+        this._doTrap(CpuPdp11.VECTOR_LINE_CLOCK);
     }
 };
 

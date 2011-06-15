@@ -77,6 +77,7 @@ Pdp11.prototype.run = function () {
             break;
         this.cpu.runStep();
     }
+    this.cpu.lineClock();
 };
 
 /**

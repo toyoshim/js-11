@@ -9,15 +9,9 @@
  * @author Takashi Toyoshima <toyoshim@gmail.com>
  */
 function DeviceRk (bus) {
-    this.RKDS = 0;  // 0777400: RK Drive Status Register
-    this.RKER = 0;  // 0777402: RK Error Register
-    this.RKCS = 0;  // 0777404: RK Control Status Register
-    this.RKWC = 0;  // 0777406: RK Word Count Register
-    this.RKBA = 0;  // 0777410: RK Current Bus Address Register
-    this.RKDA = 0;  // 0777412: RK Disk Address Register
-
     this.image = null;
     this.bus = bus;
+    this.init();
 }
 
 /**
@@ -36,6 +30,18 @@ DeviceRk.FUNCTION_READ = 4;
 DeviceRk.RKDS_RDY = 0x0080;
 DeviceRk.RKCS_RDY = 0x0080;
 DeviceRk.CONTROL_GO = 1;
+
+/**
+ * Initialize RK device.
+ */
+DeviceRk.prototype.init = function () {
+    this.RKDS = 0;  // 0777400: RK Drive Status Register
+    this.RKER = 0;  // 0777402: RK Error Register
+    this.RKCS = 0;  // 0777404: RK Control Status Register
+    this.RKWC = 0;  // 0777406: RK Word Count Register
+    this.RKBA = 0;  // 0777410: RK Current Bus Address Register
+    this.RKDA = 0;  // 0777412: RK Disk Address Register
+};
 
 /**
  * Write 16-bit data to addressed memory.
