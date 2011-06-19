@@ -682,9 +682,6 @@ CpuPdp11.prototype._doBranch = function (offset) {
 CpuPdp11.prototype._doTrap = function (vector, priority) {
     // TODO: Check priority and double bus error.
     var previousPs = this._readPs();
-    // TODO: Following previousPC should be next PC
-    // Current implementation break it in the case of bus timeout
-    // with PC auto-increment addressing mode.
     var previousPc = this.registerSet[CpuPdp11.REGISTER_PC];
     var trapPs = this._readShort(vector + 2, DeviceMmu.MODE_DIRECT);
     var trapPc = this._readShort(vector + 0, DeviceMmu.MODE_DIRECT);
@@ -896,6 +893,7 @@ CpuPdp11.prototype._addressByMode = function (modeAndR) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
     var result;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             throw new Error("Invalid indexing.");
@@ -911,8 +909,9 @@ CpuPdp11.prototype._addressByMode = function (modeAndR) {
             this.registerSet[r] -= 2;
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
-            result = this._readShort(this.registerSet[r], this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
+            result = this._readShort(address, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_INDEX:
             result = (this._fetchWord() + this.registerSet[r]) & 0xffff;
@@ -932,6 +931,7 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
     var result;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             result = this.registerSet[r] & 0xff;
@@ -940,16 +940,18 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
             result = this._readChar(this.registerSet[r], this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
-            result = this._readChar(this.registerSet[r], this.currentMode);
+            address = this.registerSet[r];
             if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
                 this.registerSet[r] += 2;
             else
                 this.registerSet[r] += 1;
+            result = this._readChar(address, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
-            result = this._readShort(this.registerSet[r], this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
-            result = this._readChar(result, this.currentMode);
+            address = this._readShort(address, this.currentMode);
+            result = this._readChar(address, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
@@ -964,10 +966,10 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
                     this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
-            result = this._readShort(
+            address = this._readShort(
                     (this._fetchWord() + this.registerSet[r]) & 0xffff,
                     this.currentMode);
-            result = this._readChar(result, this.currentMode);
+            result = this._readChar(address, this.currentMode);
             break;
         default:
             throw new RangeError("Invalid indexing mode: bl," + mode);
@@ -986,6 +988,7 @@ CpuPdp11.prototype._readShortByMode = function (modeAndR) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
     var result;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             result = this.registerSet[r];
@@ -994,13 +997,15 @@ CpuPdp11.prototype._readShortByMode = function (modeAndR) {
             result = this._readShort(this.registerSet[r], this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
-            result = this._readShort(this.registerSet[r], this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
+            result = this._readShort(address, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
-            result = this._readShort(this.registerSet[r], this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
-            result = this._readShort(result, this.currentMode);
+            address = this._readShort(address, this.currentMode);
+            result = this._readShort(address, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             this.registerSet[r] -= 2;
@@ -1012,10 +1017,10 @@ CpuPdp11.prototype._readShortByMode = function (modeAndR) {
                     this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
-            result = this._readShort(
+            address = this._readShort(
                     (this._fetchWord() + this.registerSet[r]) & 0xffff,
                     this.currentMode);
-            result = this._readShort(result, this.currentMode);
+            result = this._readShort(address, this.currentMode);
             break;
         default:
             throw new RangeError("Invalid indexing mode: wl," + mode);
@@ -1031,6 +1036,7 @@ CpuPdp11.prototype._readShortByMode = function (modeAndR) {
 CpuPdp11.prototype._writeCharByMode = function (modeAndR, value) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             this.registerSet[r] = value;
@@ -1039,11 +1045,12 @@ CpuPdp11.prototype._writeCharByMode = function (modeAndR, value) {
             this._writeChar(this.registerSet[r], value, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
-            this._writeChar(this.registerSet[r], value, this.currentMode);
+            address = this.registerSet[r];
             if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
                 this.registerSet[r] += 2;
             else
                 this.registerSet[r] += 1;
+            this._writeChar(address, value, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
@@ -1071,6 +1078,7 @@ CpuPdp11.prototype._writeCharByMode = function (modeAndR, value) {
 CpuPdp11.prototype._writeShortByMode = function (modeAndR, value) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             this.registerSet[r] = value;
@@ -1079,12 +1087,14 @@ CpuPdp11.prototype._writeShortByMode = function (modeAndR, value) {
             this._writeShort(this.registerSet[r], value, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
-            this._writeShort(this.registerSet[r], value, this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
+            this._writeShort(address, value, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT_DEFERRED:
-            var address = this._readShort(this.registerSet[r], this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
+            address = this._readShort(address, this.currentMode);
             this._writeShort(address, value, this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
@@ -1115,6 +1125,7 @@ CpuPdp11.prototype._writeShortByMode = function (modeAndR, value) {
 CpuPdp11.prototype._operationCharByMode = function (modeAndR, src, operation) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             this.registerSet[r] = operation(this.registerSet[r], src);
@@ -1125,13 +1136,14 @@ CpuPdp11.prototype._operationCharByMode = function (modeAndR, src, operation) {
                             this.currentMode), src), this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
-            this._writeChar(this.registerSet[r],
-                    operation(this._readChar(this.registerSet[r],
-                            this.currentMode), src), this.currentMode);
+            address = this.registerSet[r];
             if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
                 this.registerSet[r] += 2;
             else
                 this.registerSet[r] += 1;
+            this._writeChar(address,
+                    operation(this._readChar(address,
+                            this.currentMode), src), this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             if (r == CpuPdp11.REGISTER_SP || r == CpuPdp11.REGISTER_PC)
@@ -1166,6 +1178,7 @@ CpuPdp11.prototype._operationCharByMode = function (modeAndR, src, operation) {
 CpuPdp11.prototype._operationShortByMode = function (modeAndR, src, operation) {
     var mode = modeAndR >> 3;
     var r = modeAndR & 7;
+    var address;
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             this.registerSet[r] = operation(this.registerSet[r], src);
@@ -1176,10 +1189,11 @@ CpuPdp11.prototype._operationShortByMode = function (modeAndR, src, operation) {
                             this.currentMode), src), this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTOINCREMENT:
-            this._writeShort(this.registerSet[r],
-                    operation(this._readShort(this.registerSet[r],
-                            this.currentMode), src), this.currentMode);
+            address = this.registerSet[r];
             this.registerSet[r] += 2;
+            this._writeShort(address,
+                    operation(this._readShort(address,
+                            this.currentMode), src), this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_AUTODECREMENT:
             this.registerSet[r] -= 2;
@@ -1188,7 +1202,7 @@ CpuPdp11.prototype._operationShortByMode = function (modeAndR, src, operation) {
                             this.currentMode), src), this.currentMode);
             break;
         case CpuPdp11._ADDRESSING_INDEX:
-            var address = (this._fetchWord() + this.registerSet[r]) & 0xffff;
+            address = (this._fetchWord() + this.registerSet[r]) & 0xffff;
             this._writeShort(address, operation(this._readShort(address,
                     this.currentMode), src), this.currentMode);
             break;
