@@ -4,8 +4,10 @@
     <title>v6</title>
     <script>
         // Compatibility hack
-        if (WebKitBlobBuilder)
-            BlobBuilder = WebKitBlobBuilder;
+        if (window.WebKitBlobBuilder)
+            BlobBuilder = window.WebKitBlobBuilder;
+        else
+            BlobBuilder = function () {};
     </script>
     <script src="js/Log.js"></script>
     <script src="js/Cpu.js"></script>
