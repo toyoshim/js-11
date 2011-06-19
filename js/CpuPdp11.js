@@ -638,6 +638,7 @@ CpuPdp11.prototype.runStep = function () {
         } else {
             if (instruction == undefined)
                 instruction = 0;
+            this._dump();
             throw new Error(e.message + " on instruction " +
                     Log.toOct(instruction, 7) + " at PC " +
                     Log.toOct(this.currentPc, 7));
@@ -1195,4 +1196,48 @@ CpuPdp11.prototype._operationShortByMode = function (modeAndR, src, operation) {
         default:
             throw new RangeError("Invalid indexing mode: wo," + mode);
     }
+};
+
+/**
+ * Dump internal status.
+ */
+CpuPdp11.prototype._dump = function () {
+    var dump = "Set0 ";
+    dump += "PC:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_PC), 7) + ",";
+    dump += "R0:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R00), 7) + ",";
+    dump += "R1:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R01), 7) + ",";
+    dump += "R2:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R02), 7) + ",";
+    dump += "R3:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R03), 7) + ",";
+    dump += "R4:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R04), 7) + ",";
+    dump += "R5:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R05), 7) + ",";
+    dump += "R6:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_KSP), 7) + ",";
+    dump += "R7:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_PC), 7) + "\nSet1 ";
+    dump += "PC:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_PC), 7) + ",";
+    dump += "R0:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R10), 7) + ",";
+    dump += "R1:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R11), 7) + ",";
+    dump += "R2:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R12), 7) + ",";
+    dump += "R3:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R13), 7) + ",";
+    dump += "R4:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R14), 7) + ",";
+    dump += "R5:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_R15), 7) + ",";
+    dump += "R6:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_USP), 7) + ",";
+    dump += "R7:" + Log.toOct(
+            this.readRegister(CpuPdp11.REGISTER_FILE_PC), 7);
+    Log.getLog().fatal(dump);
 };
