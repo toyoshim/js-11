@@ -1144,6 +1144,12 @@ CpuPdp11.prototype._operationCharByMode = function (modeAndR, src, operation) {
             this._writeChar(address, operation(this._readChar(address,
                     this.currentMode), src), this.currentMode);
             break;
+        case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
+            var address = (this._fetchWord() + this.registerSet[r]) & 0xffff;
+            address = this._readShort(address, this.currentMode);
+            this._writeChar(address, operation(this._readChar(address,
+                    this.currentMode), src), this.currentMode);
+            break;
         default:
             throw new RangeError("Invalid indexing mode: bo," + mode);
     }
