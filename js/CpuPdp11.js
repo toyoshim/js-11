@@ -492,7 +492,15 @@ CpuPdp11.prototype.runStep = function () {
                         });
                 return;
             case 0005300:  // DEC
-                break;
+                this._operationCharByMode(instruction & 0000077, 0,
+                        function (dst, src) {
+                            var result = (dst - 1) & 0xffff;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = (result = 0x8000) ? 1 : 0;
+                            return result;
+                        });
+                return;
             case 0005700:  // TST
                 var test = this._readShortByMode(instruction & 0000077);
                 this.flagN = (test >> 15) & 1;
