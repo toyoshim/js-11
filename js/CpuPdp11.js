@@ -672,7 +672,7 @@ CpuPdp11.prototype._doBranch = function (offset) {
 CpuPdp11.prototype._doTrap = function (vector, priority) {
     // TODO: Check priority and double bus error.
     var previousPs = this._readPs();
-    var previousPc = this.currentPc;
+    var previousPc = this.currentPc;  // TODO: Should be next pc
     var trapPs = this._readShort(vector + 2, DeviceMmu.MODE_DIRECT);
     var trapPc = this._readShort(vector + 0, DeviceMmu.MODE_DIRECT);
     Log.getLog().info("Trap(" + vector + "):");
