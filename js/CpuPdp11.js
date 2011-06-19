@@ -508,6 +508,17 @@ CpuPdp11.prototype.runStep = function () {
                 this.flagV = 0;
                 this.flagC = 0;
                 return;
+            case 0006200:  // ASR
+                this._operationShortByMode(instruction & 0000077, 0,
+                        function (dst, src) {
+                            this.flagC = dst & 1;
+                            var result = (dst & 0x8000) | (dst >> 1);
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = this.flagN ^ this.flagC;
+                            return result;
+                        });
+                return;
             case 0006300:  // ASL
                 this._operationShortByMode(instruction & 0000077, 0,
                         function (dst, src) {
