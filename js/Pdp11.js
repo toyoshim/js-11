@@ -77,7 +77,7 @@ Pdp11.prototype.run = function () {
             break;
         this.cpu.runStep();
     }
-    this.cpu.lineClock();
+    this.cpu.checkInterrupt();
 };
 
 /**
@@ -96,7 +96,7 @@ Pdp11.prototype.bootRk0 = function () {
     this.memory.writeShort(DeviceRk.ADDRESS_RKBA, 0);  // Bus Address
     this.memory.writeShort(DeviceRk.ADDRESS_RKDA, 0);  // Disk Address
     this.memory.writeShort(DeviceRk.ADDRESS_RKCS,
-            DeviceRk.FUNCTION_READ | DeviceRk.CONTROL_GO);
+            DeviceRk.RKCS_FUNCTION_READ | DeviceRk.RKCS_GO);
 };
 
 /**

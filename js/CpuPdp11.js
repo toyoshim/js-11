@@ -63,9 +63,11 @@ CpuPdp11.REGISTER_FILE_PC = 15;
 
 CpuPdp11.VECTOR_BUS_TIMEOUT = 0004;
 CpuPdp11.VECTOR_LINE_CLOCK = 0100;
+CpuPdp11.VECTOR_RK_DISK_DRIVE = 0220;
 
 CpuPdp11.PRIORITY_BUS_TIMEOUT = 7;
 CpuPdp11.PRIORITY_LINE_CLOCK = 6;
+CpuPdp11.PRIORITY_RK_DISK_DRIVE = 5;
 
 /**
  * Private constants.
@@ -637,14 +639,19 @@ CpuPdp11.prototype.runStep = function () {
 };
 
 /**
- * Execute line clock handling.
+ * Handle device interrupts.
  */
-CpuPdp11.prototype.lineClock = function () {
+CpuPdp11.prototype.checkInterrupt = function () {
     if (this.memory.kw.requestInterrupt()) {
         Log.getLog().info("Line clock interrupt.");
         this._doTrap(CpuPdp11.VECTOR_LINE_CLOCK, CpuPdp11.PRIORITY_LINE_CLOCK);
-        this.wait = false;
+    } else if (this.memory.rk.requestInterrupt()) {
+        Log.getLog().info("RK DMA completion interrupt.");
+        this._doTrap(CpuPdp11.VECTOR_RK_DISK_DRIVE, CpuPdp11.PRIORITY_RK_DISK_DRIVE);
+    } else {
+        return;
     }
+    this.wait = false;
 };
 
 /**

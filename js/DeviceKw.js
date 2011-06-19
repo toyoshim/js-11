@@ -31,6 +31,7 @@ DeviceKw.LKS_RUN = 0x01;
  */
 DeviceKw.prototype.init = function () {
     this.lks = 0;
+    this.count = 3;
 };
 
 /**
@@ -79,6 +80,10 @@ DeviceKw.prototype.read = function (address) {
  * @return request or not
  */
 DeviceKw.prototype.requestInterrupt = function () {
+    this.count--;
+    if (0 != this.count)
+        return false;
+    this.count = 3;
     if ((this.lks & DeviceKw.LKS_INTERRUPT_ENABLE) != 0) {
         if ((this.lks & DeviceKw.LKS_MODE) == 0)
             this.lks &= ~DeviceKw.LKS_INTERRUPT_ENABLE;

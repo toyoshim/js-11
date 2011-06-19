@@ -24,12 +24,13 @@ DeviceRk.ADDRESS_RKWC = 0777406;
 DeviceRk.ADDRESS_RKBA = 0777410;
 DeviceRk.ADDRESS_RKDA = 0777412;
 
-DeviceRk.FUNCTION_MASK = 0x0e;
-DeviceRk.FUNCTION_READ = 4;
+DeviceRk.RKCS_FUNCTION_READ = 4;
 
 DeviceRk.RKDS_RDY = 0x0080;
-DeviceRk.RKCS_RDY = 0x0080;
-DeviceRk.CONTROL_GO = 1;
+DeviceRk.RKCS_IDE = 0x0040;  // Int.on Done Enable
+DeviceRk.RKCS_RDY = 0x0080;  // Control Ready
+DeviceRk.RKCS_FUNCTION = 0x000e;  // Function
+DeviceRk.RKCS_GO = 0x0001;  // Go
 
 /**
  * Initialize RK device.
@@ -41,6 +42,7 @@ DeviceRk.prototype.init = function () {
     this.RKWC = 0;  // 0777406: RK Word Count Register
     this.RKBA = 0;  // 0777410: RK Current Bus Address Register
     this.RKDA = 0;  // 0777412: RK Disk Address Register
+    this.interruptRequest = false;
 };
 
 /**
@@ -53,10 +55,10 @@ DeviceRk.prototype.write = function (address, data) {
     var result = true;
     switch (address) {
         case DeviceRk.ADDRESS_RKCS:
-            if ((data & 1)) {
+            if ((data & DeviceRk.RKCS_GO) != 0) {
                 data &= ~1;
-                var func = data & DeviceRk.FUNCTION_MASK;
-                if (func == DeviceRk.FUNCTION_READ) {
+                var func = data & DeviceRk.RKCS_FUNCTION;
+                if (func == DeviceRk.RKCS_FUNCTION_READ) {
                     var count = 0x10000 - this.RKWC;
                     var drive = this._getDrive(this.RKDA);
                     var sector = this._getSector(this.RKDA);
@@ -78,8 +80,18 @@ DeviceRk.prototype.write = function (address, data) {
                     Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
                     Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
                     Log.getLog().info("    sector: " + sector);
+                    Log.getLog().info("  Interrupt on Done: " +
+                            (((data & DeviceRk.RKCS_IDE) != 0) ? "ON" : "OFF"));
+                    if ((data & DeviceRk.RKCS_IDE) != 0) {
+                        this.interruptRequest = true;
+                        data &= ~DeviceRk.RKDS_RDY;  // Drive Ready
+                        data &= ~DeviceRk.RKCS_RDY;  // Control Ready
+                    } else {
+                        data |= DeviceRk.RKDS_RDY;  // Drive Ready
+                        data |= DeviceRk.RKCS_RDY;  // Control Ready
+                    }
                 } else {
-                    Log.getLog().warn("RK: func=" + func + ",data=" +data + "\n");
+                    Log.getLog().warn("RK: func=" + func + ",data=" + data + "\n");
                     Log.getLog().warn("RK unimplemented I/O write.");
                 }
             }
@@ -110,22 +122,35 @@ DeviceRk.prototype.read = function (address) {
 
     switch (address) {
         case DeviceRk.ADDRESS_RKDS:
-            this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
             result = this.RKDS;
-            Log.getLog().warn("RK unimplemented I/O read (RKDS).");
+            Log.getLog().warn("RK unimplemented I/O read (RKDS): 0x" +
+                    Log.toHex(result, 4));
             break;
         case DeviceRk.ADDRESS_RKER:
             result = this.RKER;
             break;
         case DeviceRk.ADDRESS_RKCS:
-            this.RKCS |= DeviceRk.RKCS_RDY; // Control Ready
             result = this.RKCS;
-            Log.getLog().warn("RK unimplemented I/O read (RKCS).");
+            Log.getLog().warn("RK unimplemented I/O read (RKCS): 0x" +
+                    Log.toHex(result, 4));
             break;
         default:
             break;
     }
     return result;
+};
+
+/**
+ * Check interrupt request.
+ * @return request or not
+ */
+DeviceRk.prototype.requestInterrupt = function () {
+    if (!this.interruptRequest)
+        return false;
+    this.interruptRequest = false;
+    this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
+    this.RKCS |= DeviceRk.RKCS_RDY;  // Control Ready
+    return true;
 };
 
 /**
