@@ -649,6 +649,8 @@ CpuPdp11.prototype.runStep = function () {
  * Handle device interrupts.
  */
 CpuPdp11.prototype.checkInterrupt = function () {
+    var wait = this.wait;
+    this.wait = false;
     if (this.memory.kw.requestInterrupt()) {
         Log.getLog().info("Line clock interrupt.");
         this._doTrap(CpuPdp11.VECTOR_LINE_CLOCK, CpuPdp11.PRIORITY_LINE_CLOCK);
@@ -656,9 +658,8 @@ CpuPdp11.prototype.checkInterrupt = function () {
         Log.getLog().info("RK DMA completion interrupt.");
         this._doTrap(CpuPdp11.VECTOR_RK_DISK_DRIVE, CpuPdp11.PRIORITY_RK_DISK_DRIVE);
     } else {
-        return;
+        this.wait = wait;
     }
-    this.wait = false;
 };
 
 /**
