@@ -62,10 +62,12 @@ CpuPdp11.REGISTER_FILE_KSP = 14;
 CpuPdp11.REGISTER_FILE_PC = 15;
 
 CpuPdp11.VECTOR_BUS_TIMEOUT = 0004;
+CpuPdp11.VECTOR_TRAP = 0034;
 CpuPdp11.VECTOR_LINE_CLOCK = 0100;
 CpuPdp11.VECTOR_RK_DISK_DRIVE = 0220;
 
 CpuPdp11.PRIORITY_BUS_TIMEOUT = 7;
+CpuPdp11.PRIORITY_TRAP = 7;
 CpuPdp11.PRIORITY_LINE_CLOCK = 6;
 CpuPdp11.PRIORITY_RK_DISK_DRIVE = 5;
 
@@ -452,6 +454,12 @@ CpuPdp11.prototype.runStep = function () {
             case 0103400:  // BCS
                 if (this.flagC == 1)
                     this._doBranch(instruction & 0000377);
+                return;
+            case 0104400:  // TRAP
+                Log.getLog().fatal("TRAP " + Log.toOct(instruction & 0000377, 7) +
+                        " @ " + ((this.currentMode == CpuPdp11.MODE_KERNEL) ?
+                        "KERNEL" : "USER"));
+                this._doTrap(CpuPdp11.VECTOR_TRAP, CpuPdp11.PRIORITY_TRAP);
                 return;
             default:
                 break;
