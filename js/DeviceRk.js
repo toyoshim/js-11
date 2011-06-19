@@ -87,12 +87,14 @@ DeviceRk.prototype.write = function (address, data) {
                             (((data & DeviceRk.RKCS_IDE) != 0) ? "ON" : "OFF"));
                     if ((data & DeviceRk.RKCS_IDE) != 0) {
                         this.interruptRequest = true;
-                        data &= ~DeviceRk.RKDS_RDY;  // Drive Ready
+                        this.RKDS &= ~DeviceRk.RKDS_RDY;  // Drive Ready
                         data &= ~DeviceRk.RKCS_RDY;  // Control Ready
                     } else {
-                        data |= DeviceRk.RKDS_RDY;  // Drive Ready
+                        this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
                         data |= DeviceRk.RKCS_RDY;  // Control Ready
                     }
+                    Log.getLog().info("RKBA: " + Log.toOct(data, 7));
+                    Log.getLog().info("RKDA: " + Log.toOct(data, 7));
                 } else {
                     Log.getLog().warn("RK: func=" + func + ",data=" + data + "\n");
                     Log.getLog().warn("RK unimplemented I/O write.");
