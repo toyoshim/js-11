@@ -129,7 +129,7 @@ Pdp11.prototype.dump = function () {
             this.cpu.readRegister(CpuPdp11.REGISTER_FILE_KSP), 7) + ",";
     dump += "R7:" + Log.toOct(
             this.cpu.readRegister(CpuPdp11.REGISTER_FILE_PC), 7);
-    Log.getLog().info(dump);
+    Log.getLog().fatal(dump);
 };
 
 /**
