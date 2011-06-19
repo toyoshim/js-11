@@ -811,6 +811,7 @@ CpuPdp11.prototype._readShort = function (address, mode) {
  */
 CpuPdp11.prototype._writeChar = function (address, value, mode) {
     var physicalAddress = this.memory.mmu.getPhysicalAddress(address, mode);
+    value &= 0xff;
     if (physicalAddress == 0777776) {
         // PS: Processor Status word Low
         this._writePs((this._readPs() & 0xff00) | (value & 0xff));
