@@ -492,12 +492,12 @@ CpuPdp11.prototype.runStep = function () {
                         });
                 return;
             case 0005300:  // DEC
-                this._operationCharByMode(instruction & 0000077, 0,
+                this._operationShortByMode(instruction & 0000077, 0,
                         function (dst, src) {
                             var result = (dst - 1) & 0xffff;
                             this.flagN = (result >> 15) & 1;
                             this.flagZ = (result == 0) ? 1 : 0;
-                            this.flagV = (result = 0x8000) ? 1 : 0;
+                            this.flagV = (result == 0x8000) ? 1 : 0;
                             return result;
                         });
                 return;
@@ -580,7 +580,7 @@ CpuPdp11.prototype.runStep = function () {
                             var result = (dst - 1) & 0xff;
                             this.flagN = (result >> 7) & 1;
                             this.flagZ = (result == 0) ? 1 : 0;
-                            this.flagV = (result = 0x80) ? 1 : 0;
+                            this.flagV = (result == 0x80) ? 1 : 0;
                             return result;
                         });
                 return;
