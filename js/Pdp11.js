@@ -62,18 +62,18 @@ function Pdp11 () {
     this.cpu = new CpuPdp11();
     this.cpu.setMemory(this.memory);
     this.logging = false;
-    this.stop = false;
+    this._stop = false;
 }
 
 /**
  * Run emulation.
  */
 Pdp11.prototype.run = function () {
-    this.stop = false;
+    this._stop = false;
     for (var i = 0; i < 10000; i++) {
         if (this.logging)
             this.dump();
-        if (this.stop)
+        if (this._stop)
             break;
         this.cpu.runStep();
     }
@@ -84,14 +84,13 @@ Pdp11.prototype.run = function () {
  * Stop emulation.
  */
 Pdp11.prototype.stop = function () {
-    this.stop = true;
+    this._stop = true;
 };
 
 /**
  * Boot from RK0.
  */
 Pdp11.prototype.bootRk0 = function () {
-    this.cpu.writeRegister(CpuPdp11.REGISTER_FILE_R04, 0x0410);
     this.memory.writeShort(DeviceRk.ADDRESS_RKWC, 0x10000 - 512);  // 512 Word
     this.memory.writeShort(DeviceRk.ADDRESS_RKBA, 0);  // Bus Address
     this.memory.writeShort(DeviceRk.ADDRESS_RKDA, 0);  // Disk Address
