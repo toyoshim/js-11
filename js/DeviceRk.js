@@ -62,6 +62,8 @@ DeviceRk.prototype.write = function (address, data) {
                     var count = 0x10000 - this.RKWC;
                     var drive = this._getDrive(this.RKDA);
                     var sector = this._getSector(this.RKDA);
+                    Log.getLog().info("RKBA: " + Log.toOct(this.RKBA, 7));
+                    Log.getLog().info("RKDA: " + Log.toOct(this.RKDA, 7));
                     Log.getLog().info("RK READ: 0x" + Log.toHex(data, 4));
                     Log.getLog().info("  Word Count: " + count);
                     Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
@@ -93,8 +95,6 @@ DeviceRk.prototype.write = function (address, data) {
                         this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
                         data |= DeviceRk.RKCS_RDY;  // Control Ready
                     }
-                    Log.getLog().info("RKBA: " + Log.toOct(data, 7));
-                    Log.getLog().info("RKDA: " + Log.toOct(data, 7));
                 } else {
                     Log.getLog().warn("RK: func=" + func + ",data=" + data + "\n");
                     Log.getLog().warn("RK unimplemented I/O write.");
