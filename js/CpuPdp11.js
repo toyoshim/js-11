@@ -923,8 +923,6 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
     switch (mode) {
         case CpuPdp11._ADDRESSING_REGISTER:
             result = this.registerSet[r] & 0xff;
-            if ((result & 0x80) != 0)
-                result |= 0xff00;
             break;
         case CpuPdp11._ADDRESSING_REGISTER_DEFERRED:
             result = this._readChar(this.registerSet[r], this.currentMode);
@@ -962,6 +960,8 @@ CpuPdp11.prototype._readCharByMode = function (modeAndR) {
         default:
             throw new RangeError("Invalid indexing mode: bl," + mode);
     }
+    if ((result & 0x80) != 0)
+        result |= 0xff00;
     return result;
 };
 
