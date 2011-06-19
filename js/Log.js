@@ -17,6 +17,7 @@
  *     undefined: Use native console.log if it's available.
  *     null: Eliminate all logs.
  *     <string>: Output as pre element under DOM object which has <string> id.
+ *     <WebSocket>: Output as socket stream through <WebSocket> object.
  * @param reverse logging order
  *     true: Newer logs will be added to tail.
  *     false: Newer logs will be added to head.
@@ -37,6 +38,15 @@ function Log (id, reverse) {
             this.print = function (object) {
                 console.log(object);
             }
+        }
+    } else if (id instanceof WebSocket) {
+        this.print = function (object) {
+            if (window.console != undefined)
+                console.log(object);
+            var message = object;
+            if (object instanceof Object)
+                message = object.toString();
+            id.send(message);
         }
     } else if (id != null) {
         // Try to output under specified DOM object.
