@@ -324,9 +324,8 @@ CpuPdp11.prototype.runStep = function () {
                 var dst = this.registerSet[r];
                 var src = this._readShortByMode(instruction & 0000077);
                 var result = dst * src;
-                r &= 6;
-                this.registerSet[r + 0] = (result >> 32) & 0xffff;
-                this.registerSet[r + 1] = result & 0xffff;
+                this.registerSet[r] = (result >> 32) & 0xffff;
+                this.registerSet[r | 1] = result & 0xffff;
                 this.flagN = (result >> 31) & 1;
                 this.flagZ = (result == 0) ? 1 : 0;
                 this.flagV = 0;
