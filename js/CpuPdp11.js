@@ -18,6 +18,7 @@ function CpuPdp11 () {
     this.generalRegisterSet[1] =
             new Uint16Array(CpuPdp11.NUM_OF_GENERAL_REGISTERS);
     this.stackPointer = new Uint16Array(3);
+    this.logging = false;
     this.init();
 }
 
@@ -837,6 +838,9 @@ CpuPdp11.prototype._writeChar = function (address, value, mode) {
         this._writePs((value << 8) | (this.readPs() & 0xff));
         return;
     }
+    if (this.logging)
+        Log.getLog().info("WC: " + Log.toOct(physicalAddress, 7) + " (" +
+                Log.toOct(address, 7) + ") <= " + Log.toOct(value , 4));
     this.memory.writeChar(physicalAddress, value);
 };
 
@@ -853,6 +857,9 @@ CpuPdp11.prototype._writeShort = function (address, value, mode) {
         this._writePs(value);
         return;
     }
+    if (this.logging)
+        Log.getLog().info("WS: " + Log.toOct(physicalAddress, 7) + " (" +
+                Log.toOct(address, 7) + ") <= " + Log.toOct(value , 7));
     this.memory.writeShort(physicalAddress, value);
 };
 

@@ -10,7 +10,6 @@
  * @see Memory
  */
 function MemoryUnibus () {
-    this.logging = false;
     this.rk = new DeviceRk(this);
     this.tt = new DeviceTt(this);
     this.kw = new DeviceKw(this);
@@ -50,9 +49,6 @@ MemoryUnibus.prototype.init = function () {
  * @param data data to write
  */
 MemoryUnibus.prototype.writeChar = function (address, data) {
-    if (this.logging)
-        Log.getLog().info("WC: " + Log.toOct(address, 7) + " <= " +
-                Log.toOct(data , 4));
     var result = this._read(address);
     if (result < 0)
         throw new RangeError("Memory " + Log.toOct(address, 7) +
@@ -92,9 +88,6 @@ MemoryUnibus.prototype.readChar = function (address) {
  * @param data data to write
  */
 MemoryUnibus.prototype.writeShort = function (address, data) {
-    if (this.logging)
-        Log.getLog().info("WS: " + Log.toOct(address, 7) + " <= " +
-                Log.toOct(data , 7));
     if ((address & 1) != 0)
         throw new RangeError("Memory alignment error to " +
                 Log.toOct(address, 7) + ".");

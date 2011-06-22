@@ -71,14 +71,11 @@ DeviceRk.prototype.write = function (address, data) {
                     Log.getLog().info("    drive: " + drive);
                     Log.getLog().info("    sector: " + sector);
                     var diskAddress = sector << 8;
-                    var logging = this.bus.logging;
-                    this.bus.logging = false;
                     for (var i = 0; i < count; i++) {
                         this.bus.writeShort(this.RKBA, this.image[diskAddress++]);
                         this.RKBA = (this.RKBA + 2) & 0xffff;
                         this.RKWC = (this.RKWC + 1) & 0xffff;
                     }
-                    this.bus.logging = logging;
                     sector = diskAddress >> 8;
                     this.RKDA = this._encodeAddress(drive, sector);
                     Log.getLog().info("  Word Count: " + count);

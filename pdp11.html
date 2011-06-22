@@ -72,16 +72,16 @@
             Log.getLog().clear();
         };
         pdp11_mdump = function () {
-            if (document.control.mdump.value) {
-                pdp11.memory.logging = true;
+            if (document.control.mdump.checked == true) {
+                pdp11.cpu.logging = true;
                 document.control.level.selectedIndex = 0;
                 pdp11_select();
             } else {
-                pdp11.memory.logging = false;
+                pdp11.cpu.logging = false;
             }
         };
         pdp11_rdump = function () {
-            if (document.control.rdump.value) {
+            if (document.control.rdump.checked == true) {
                 pdp11.logging = true;
                 document.control.level.selectedIndex = 0;
                 pdp11_select();
