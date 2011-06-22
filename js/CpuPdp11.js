@@ -569,13 +569,8 @@ CpuPdp11.prototype.runStep = function () {
             case 0006700:  // SXT
                 this.flagZ = this.flagN;
                 this.flagV = 0;
-                this._operationShortByMode(instruction & 0000077, this.flagN,
-                        function (dst, flagN) {
-                            if (flagN == 0)
-                                return dst & 0x00ff;
-                            else
-                                return dst | 0xff00;
-                        });
+                this._writeShortByMode(instruction & 0000077,
+                        (this.flagN == 0) ? 0x0000 : 0xffff, this.previousMode);
                 return;
             case 0105000:  // CLRB
                 this.flagN = 0;
