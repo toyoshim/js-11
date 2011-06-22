@@ -304,3 +304,13 @@ DeviceMmu.prototype.read = function (address) {
     }
     return -1;
 };
+
+DeviceMmu.prototype.dump = function () {
+    var dump = " |KERNEL |USER   \n";
+    for (var i = 0; i < 8; i++) {
+        dump += i + "|";
+        dump += Log.toOct(this.kernelPageAddressRegister[i], 7) + "|";
+        dump += Log.toOct(this.userPageAddressRegister[i], 7) + "\n";
+    }
+    Log.getLog().fatal(dump);
+};

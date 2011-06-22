@@ -393,6 +393,40 @@ CpuPdp11.prototype.runStep = function () {
                     this.registerSet[r] = result & 0xffff;
                 }
                 return;
+            case 0073000:  // ASHC
+                var src = this._readShortByMode(instruction & 0000077);
+                var offset = src & 0000037;
+                var sign = (src & 0000040) >> 5;
+                var r = (instruction & 0000700) >> 6;
+                if (sign == 0) {
+                    // Shift to left
+                    var result_high = this.registerSet[r] << offset;
+                    var result_low = this.registerSet[r + 1] << offset;
+                    var result = ((result_high << 16) | result_low) & 0xffffffff;
+                    this.flagN = (result_high >> 15) & 1;
+                    this.flagZ = (result == 0) ? 1 : 0;
+                    this.flagV = ((result_high ^ this.registerSet[r]) >> 15) & 1;
+                    this.flagC = (result_high >> 16) & 1;
+                    this.registerSet[r] = (result >> 16) & 0xffff;
+                    this.registerSet[r + 1] = result & 0xffff;
+                } else {
+                    // Shift to right
+                    offset = 32 - offset;
+                    var result_high = this.registerSet[r] >> offset;
+                    var result_low = this.registerSet[r + 1] >> offset;
+                    var result = ((result_high << 16) | result_low) & 0xffffffff;
+                    if ((this.registerSet[r] & 0x8000) != 0)
+                        result |= (0xffffffff << (32 - offset)) & 0xffffffff;
+                    this.flagN = (result_high >> 15) & 1;
+                    this.flagZ = (result == 0) ? 1 : 0;
+                    this.flagV = ((result_high ^ this.registerSet[r]) >> 15) & 1;
+                    this.flagC = (offset <= 16) ?
+                            ((this.registerSet[r + 1] >> (offset - 1)) & 1) :
+                            ((this.registerSet[r] >> (offset - 17)) & 1);
+                    this.registerSet[r] = (result >> 16) & 0xffff;
+                    this.registerSet[r + 1] = result & 0xffff;
+                }
+                return;
             case 0076000:  // XOR
                 break;
             case 0077000:  // SOB
@@ -457,7 +491,7 @@ CpuPdp11.prototype.runStep = function () {
                     this._doBranch(instruction & 0000377);
                 return;
             case 0104400:  // TRAP
-                Log.getLog().fatal("TRAP " + Log.toOct(instruction & 0000377, 7) +
+                Log.getLog().info("TRAP " + Log.toOct(instruction & 0000377, 7) +
                         " @ " + ((this.currentMode == CpuPdp11.MODE_KERNEL) ?
                         "KERNEL" : "USER"));
                 this._doTrap(CpuPdp11.VECTOR_TRAP, CpuPdp11.PRIORITY_TRAP);
@@ -507,6 +541,41 @@ CpuPdp11.prototype.runStep = function () {
                             this.flagN = (result >> 15) & 1;
                             this.flagZ = (result == 0) ? 1 : 0;
                             this.flagV = (result == 0x8000) ? 1 : 0;
+                            return result;
+                        });
+                return;
+            case 0005400:  // NEG
+                this._operationShortByMode(instruction & 0000077, 0,
+                        function (dst, src) {
+                            var result = (0x10000 - dst) & 0xffff;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = (result == 0x8000) ? 1 : 0;
+                            this.flagC = (result == 0) ? 0 : 1;
+                            return result;
+                        });
+                return;
+            case 0005500:  // ADC
+                this._operationShortByMode(instruction & 0000077, this.flagC,
+                        function (dst, flagC) {
+                            var result = (src + flagC) & 0xffff;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = ((result == 0x7fff) && (flagC == 1)) ?
+                                    1 : 0;
+                            this.flagC = ((result == 0xffff) && (flagC == 1)) ?
+                                    1 : 0;
+                            return result;
+                        });
+                return;
+            case 0005600:  // SBC
+                this._operationShortByMode(instruction & 0000077, this.flagC,
+                        function (dst, flagC) {
+                            var result = (dst - flagC) & 0xffff;
+                            this.flagN = (result >> 15) & 1;
+                            this.flagZ = (result == 0) ? 1 : 0;
+                            this.flagV = (result == 0x8000) ? 1 : 0;
+                            this.flagC = (result == 0) ? 0 : 1;
                             return result;
                         });
                 return;
@@ -599,6 +668,8 @@ CpuPdp11.prototype.runStep = function () {
                             return result;
                         });
                 return;
+            case 0105600:  // SBCB
+                break;
             case 0105700:  // TSTB
                 var test = this._readCharByMode(instruction & 0000077);
                 this.flagN = (test >> 7) & 1;
@@ -1085,6 +1156,12 @@ CpuPdp11.prototype._writeCharByMode = function (modeAndR, value) {
                     (this._fetchWord() + this.registerSet[r]) & 0xffff,
                     value,
                     this.currentMode);
+            break;
+        case CpuPdp11._ADDRESSING_INDEX_DEFERRED:
+            var address = this._readShort(
+                    (this._fetchWord() + this.registerSet[r]) & 0xffff,
+                    this.currentMode);
+            this._writeChar(address, value, this.currentMode);
             break;
         default:
             throw new RangeError("Invalid indexing mode: bs," + mode);
