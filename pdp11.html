@@ -5,9 +5,13 @@
     <script>
         // Compatibility hack
         if (window.WebKitBlobBuilder)
-            BlobBuilder = window.WebKitBlobBuilder;
+            window.BlobBuilder = window.WebKitBlobBuilder;
         else
-            BlobBuilder = function () {};
+            window.BlobBuilder = function () {};
+        if (window.webkitRequestFileSystem)
+            window.requestFileSystem = webkitRequestFileSystem;
+        else
+            window.requestFileSystem = function () {};
     </script>
     <script src="js/Log.js"></script>
     <script src="js/Cpu.js"></script>
@@ -24,6 +28,7 @@
 <body>
     <!--pre>TODO:
 * Remove browser dependant code into separated class.
+* Physical/Virtual memory access dump.
 * Interrupt priority.
 * MUL/DIV detail implementation.
 * Memory protection.
@@ -88,18 +93,60 @@
             Log.getLog().setLevel(Log.INFO);
             pdp11.dump();
             pdp11_select();
+            pdp11.memory.mmu.dump();
         };
         pdp11_cons = function () {
             pdp11.memory.tt.cons = document.control.cons.value;
         };
         pdp11_logto = function () {
             pdp11_clear();
-            if (document.control.log.value == "dom")
+            if (document.control.logtype[0].checked)
                 pdp11_log();
-            else if (document.control.log.value == "ws")
-                Log.setLog(new Log(new WebSocket("ws://localhost:8080/log")));
-            else
-                Log.setLog(new Log(new BlobBuilder()));
+            else if (document.control.logtype[1].checked) {
+                var ws = new WebSocket("ws://localhost:8080/log");
+                ws.writeLog = function (message) {
+                    ws.send(message);
+                };
+                Log.setLog(new Log(ws));
+            } else if (document.control.logtype[2].checked) {
+                var bb = new BlobBuilder();
+                bb.writeLog = function (message) {
+                    bb.append(message);
+                };
+                Log.setLog(new Log(bb));
+            } else {
+                requestFileSystem(PERSISTENT, 1024 * 1024 * 1024, function (fs) {
+                    fs.root.getFile("log.txt", { create: true }, function (file) {
+                        file.createWriter(function (writer) {
+                            var busy = false;
+                            var bb = new BlobBuilder();
+                            writer.onwrite = function (e) {
+                                busy = false;
+                                writer.flushLog();
+                            };
+                            writer.onerror = function (e) {
+                                console.log(e);
+                            };
+                            writer.flushLog = function () {
+                                if (busy)
+                                    return;
+                                var blob = bb.getBlob();
+                                if (blob.size == 0)
+                                    return;
+                                busy = true;
+                                bb = new BlobBuilder();
+                                writer.write(blob);
+                            };
+                            writer.writeLog = function (message) {
+                                bb.append(message);
+                                writer.flushLog();
+                            };
+                            Log.setLog(new Log(writer));
+                            pdp11_select();
+                        });
+                    });
+                });
+            }
             pdp11_select();
         };
         pdp11_blobdl = function () {
@@ -138,14 +185,16 @@
                    onchange="pdp11_cons();"><br>
         [DEBUG]
         Log to
-            <input type="radio" name="log" value="dom" onclick="pdp11_logto();"
+            <input type="radio" name="logtype" onclick="pdp11_logto();"
                     checked="true">
             DOM
-            <input type="radio" name="log" value="ws" onclick="pdp11_logto();">
+            <input type="radio" name="logtype" onclick="pdp11_logto();">
             ws://localhost:8080/log
-            <input type="radio" name="log" value="blob" onclick="pdp11_logto();">
+            <input type="radio" name="logtype" onclick="pdp11_logto();">
             Blob
-            <input type="button" value="Download" onclick="pdp11_blobdl();"><br>
+            <input type="button" value="Download" onclick="pdp11_blobdl();">
+            <input type="radio" name="logtype" onclick="pdp11_logto();">
+            File API
     </form></div>
     <pre>==== DEBUG LOG ====</pre>
     <pre id="log"></pre>

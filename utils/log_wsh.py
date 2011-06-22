@@ -10,5 +10,4 @@ def web_socket_transfer_data(request):
     file = open("/tmp/wslog.txt", "w")
     while True:
         line = msgutil.receive_message(request)
-        file.write(line + "\n")
-
+        file.write(line)
