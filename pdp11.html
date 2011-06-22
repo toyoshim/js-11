@@ -141,6 +141,7 @@
                                 bb.append(message);
                                 writer.flushLog();
                             };
+                            writer.truncate(0);
                             Log.setLog(new Log(writer));
                             pdp11_select();
                         });
