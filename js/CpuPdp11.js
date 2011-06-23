@@ -715,6 +715,9 @@ CpuPdp11.prototype.runStep = function () {
                 Log.getLog().info("  PC = " + Log.toOct(this.currentPc, 7) + " -> " +
                         Log.toOct(this.registerSet[CpuPdp11.REGISTER_PC], 7));
                 return;
+            case 0170011:  // SETD
+                Log.getLog().warn("Set Floating Double Mode");
+                return;
             default:
                 throw new Error("Unknown");
         }
@@ -725,9 +728,12 @@ CpuPdp11.prototype.runStep = function () {
             if (instruction == undefined)
                 instruction = 0;
             this._dump();
+            var physicalAddress = this.memory.mmu.getPhysicalAddress(this.currentPc,
+                    this.currentMode);
             throw new Error(e.message + " on instruction " +
                     Log.toOct(instruction, 7) + " at PC " +
-                    Log.toOct(this.currentPc, 7));
+                    Log.toOct(this.currentPc, 7) + " (" +
+                    Log.toOct(physicalAddress, 7) + ")");
         }
     }
 };
