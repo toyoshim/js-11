@@ -230,7 +230,7 @@ CpuPdp11.prototype.runStep = function () {
                 var src = this._readShortByMode((instruction & 0007700) >> 6);
                 this._operationShortByMode(instruction & 0000077, src,
                         function (dst, src) {
-                            var result = src ^ dst;
+                            var result = src | dst;
                             this.flagN = (result >> 15) & 1;
                             this.flagZ = (result == 0) ? 1 : 0;
                             this.flagV = 0;
@@ -290,7 +290,7 @@ CpuPdp11.prototype.runStep = function () {
                 var src = this._readCharByMode((instruction & 0007700) >> 6);
                 this._operationCharByMode(instruction & 0000077, src,
                         function (dst, src) {
-                            var result = src ^ dst;
+                            var result = src | dst;
                             this.flagN = (result >> 7) & 1;
                             this.flagZ = (result == 0) ? 1 : 0;
                             this.flagV = 0;
