@@ -24,6 +24,7 @@ DeviceRk.ADDRESS_RKWC = 0777406;
 DeviceRk.ADDRESS_RKBA = 0777410;
 DeviceRk.ADDRESS_RKDA = 0777412;
 
+DeviceRk.RKCS_FUNCTION_WRITE = 2;
 DeviceRk.RKCS_FUNCTION_READ = 4;
 
 DeviceRk.RKDS_RDY = 0x0080;
@@ -59,39 +60,9 @@ DeviceRk.prototype.write = function (address, data) {
                 data &= ~1;
                 var func = data & DeviceRk.RKCS_FUNCTION;
                 if (func == DeviceRk.RKCS_FUNCTION_READ) {
-                    var count = 0x10000 - this.RKWC;
-                    var drive = this._getDrive(this.RKDA);
-                    var sector = this._getSector(this.RKDA);
-                    Log.getLog().info("RKBA: " + Log.toOct(this.RKBA, 7));
-                    Log.getLog().info("RKDA: " + Log.toOct(this.RKDA, 7));
-                    Log.getLog().info("RK READ: 0x" + Log.toHex(data, 4));
-                    Log.getLog().info("  Word Count: " + count);
-                    Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
-                    Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
-                    Log.getLog().info("    drive: " + drive);
-                    Log.getLog().info("    sector: " + sector);
-                    var diskAddress = sector << 8;
-                    for (var i = 0; i < count; i++) {
-                        this.bus.writeShort(this.RKBA, this.image[diskAddress++]);
-                        this.RKBA = (this.RKBA + 2) & 0xffff;
-                        this.RKWC = (this.RKWC + 1) & 0xffff;
-                    }
-                    sector = diskAddress >> 8;
-                    this.RKDA = this._encodeAddress(drive, sector);
-                    Log.getLog().info("  Word Count: " + count);
-                    Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
-                    Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
-                    Log.getLog().info("    sector: " + sector);
-                    Log.getLog().info("  Interrupt on Done: " +
-                            (((data & DeviceRk.RKCS_IDE) != 0) ? "ON" : "OFF"));
-                    if ((data & DeviceRk.RKCS_IDE) != 0) {
-                        this.interruptRequest = true;
-                        this.RKDS &= ~DeviceRk.RKDS_RDY;  // Drive Ready
-                        data &= ~DeviceRk.RKCS_RDY;  // Control Ready
-                    } else {
-                        this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
-                        data |= DeviceRk.RKCS_RDY;  // Control Ready
-                    }
+                    data = this._readWrite(data, false);
+                } else if (func == DeviceRk.RKCS_FUNCTION_WRITE) {
+                    data = this._readWrite(data, true);
                 } else {
                     Log.getLog().warn("RK: func=" + func + ",data=" + data + "\n");
                     Log.getLog().warn("RK unimplemented I/O write.");
@@ -199,4 +170,50 @@ DeviceRk.prototype._getSector = function (address) {
 DeviceRk.prototype._getDrive = function (address) {
     var drive = (address >> 13) & 0x0007;
     return drive;
+};
+
+/**
+ * Read from disk or write to disk.
+ * @param data written register value
+ * @param write write (true) or read (false)
+ * @return modified data value
+ */
+DeviceRk.prototype._readWrite = function (data, write) {
+    var count = 0x10000 - this.RKWC;
+    var drive = this._getDrive(this.RKDA);
+    var sector = this._getSector(this.RKDA);
+    Log.getLog().info("RKBA: " + Log.toOct(this.RKBA, 7));
+    Log.getLog().info("RKDA: " + Log.toOct(this.RKDA, 7));
+    Log.getLog().info("RK READ: 0x" + Log.toHex(data, 4));
+    Log.getLog().info("  Word Count: " + count);
+    Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
+    Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
+    Log.getLog().info("    drive: " + drive);
+    Log.getLog().info("    sector: " + sector);
+    var diskAddress = sector << 8;
+    for (var i = 0; i < count; i++) {
+        if (write)
+            this.image[diskAddress++] = this.bus.readShort(this.RKBA);
+        else
+            this.bus.writeShort(this.RKBA, this.image[diskAddress++]);
+        this.RKBA = (this.RKBA + 2) & 0xffff;
+        this.RKWC = (this.RKWC + 1) & 0xffff;
+    }
+    sector = diskAddress >> 8;
+    this.RKDA = this._encodeAddress(drive, sector);
+    Log.getLog().info("  Word Count: " + count);
+    Log.getLog().info("  Bus Address: " + Log.toOct(this.RKBA, 7));
+    Log.getLog().info("  Disk Address: " + Log.toOct(this.RKDA, 7));
+    Log.getLog().info("    sector: " + sector);
+    Log.getLog().info("  Interrupt on Done: " +
+            (((data & DeviceRk.RKCS_IDE) != 0) ? "ON" : "OFF"));
+    if ((data & DeviceRk.RKCS_IDE) != 0) {
+        this.interruptRequest = true;
+        this.RKDS &= ~DeviceRk.RKDS_RDY;  // Drive Ready
+        data &= ~DeviceRk.RKCS_RDY;  // Control Ready
+    } else {
+        this.RKDS |= DeviceRk.RKDS_RDY;  // Drive Ready
+        data |= DeviceRk.RKCS_RDY;  // Control Ready
+    }
+    return data;
 };
